@@ -1,6 +1,6 @@
 # vfa: Vitriflow enhanced analysis
 
-Analysis of amorphous network structures and of charge trapping in them, with every convention named: structure, voids,
+Analysis of amorphous network structures and of charge trapping in them: structure, voids,
 electronic spectra, finite-size corrections, statistics and provenance, each with its modes and caveats stated.
 
     pip install -r requirements.txt
