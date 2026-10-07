@@ -1,0 +1,156 @@
+{
+ "source": "Shannon, Acta Cryst. A32, 751 (1976), effective ionic radii; charge and coordination number per entry",
+ "unit": "A",
+ "radii": {
+  "Li": {
+   "charge": 1,
+   "cn": 4,
+   "radius_A": 0.59
+  },
+  "Na": {
+   "charge": 1,
+   "cn": 6,
+   "radius_A": 1.02
+  },
+  "K": {
+   "charge": 1,
+   "cn": 6,
+   "radius_A": 1.38
+  },
+  "Rb": {
+   "charge": 1,
+   "cn": 6,
+   "radius_A": 1.52
+  },
+  "Cs": {
+   "charge": 1,
+   "cn": 6,
+   "radius_A": 1.67
+  },
+  "Be": {
+   "charge": 2,
+   "cn": 4,
+   "radius_A": 0.27
+  },
+  "Mg": {
+   "charge": 2,
+   "cn": 6,
+   "radius_A": 0.72
+  },
+  "Ca": {
+   "charge": 2,
+   "cn": 6,
+   "radius_A": 1.0
+  },
+  "Sr": {
+   "charge": 2,
+   "cn": 6,
+   "radius_A": 1.18
+  },
+  "Ba": {
+   "charge": 2,
+   "cn": 6,
+   "radius_A": 1.35
+  },
+  "Zn": {
+   "charge": 2,
+   "cn": 4,
+   "radius_A": 0.6
+  },
+  "B": {
+   "charge": 3,
+   "cn": 4,
+   "radius_A": 0.11
+  },
+  "Al": {
+   "charge": 3,
+   "cn": 4,
+   "radius_A": 0.39
+  },
+  "Ga": {
+   "charge": 3,
+   "cn": 4,
+   "radius_A": 0.47
+  },
+  "Y": {
+   "charge": 3,
+   "cn": 6,
+   "radius_A": 0.9
+  },
+  "La": {
+   "charge": 3,
+   "cn": 6,
+   "radius_A": 1.032
+  },
+  "Sm": {
+   "charge": 3,
+   "cn": 6,
+   "radius_A": 0.958
+  },
+  "Gd": {
+   "charge": 3,
+   "cn": 6,
+   "radius_A": 0.938
+  },
+  "Si": {
+   "charge": 4,
+   "cn": 4,
+   "radius_A": 0.26
+  },
+  "Ge": {
+   "charge": 4,
+   "cn": 4,
+   "radius_A": 0.39
+  },
+  "Ti": {
+   "charge": 4,
+   "cn": 6,
+   "radius_A": 0.605
+  },
+  "Zr": {
+   "charge": 4,
+   "cn": 6,
+   "radius_A": 0.72
+  },
+  "Hf": {
+   "charge": 4,
+   "cn": 6,
+   "radius_A": 0.71
+  },
+  "P": {
+   "charge": 5,
+   "cn": 4,
+   "radius_A": 0.17
+  },
+  "O": {
+   "charge": -2,
+   "cn": 4,
+   "radius_A": 1.38
+  },
+  "N": {
+   "charge": -3,
+   "cn": 4,
+   "radius_A": 1.46
+  },
+  "F": {
+   "charge": -1,
+   "cn": 4,
+   "radius_A": 1.31
+  },
+  "Cl": {
+   "charge": -1,
+   "cn": 6,
+   "radius_A": 1.81
+  },
+  "S": {
+   "charge": -2,
+   "cn": 6,
+   "radius_A": 1.84
+  },
+  "Se": {
+   "charge": -2,
+   "cn": 6,
+   "radius_A": 1.98
+  }
+ }
+}

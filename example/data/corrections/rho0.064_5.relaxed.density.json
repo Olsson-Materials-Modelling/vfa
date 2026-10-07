@@ -1,0 +1,24 @@
+{
+ "energies": {
+  "E_corr_eV": 0.2644
+ },
+ "neutral_pipeline": {
+  "components": {
+   "CD": {
+    "selected_minus_q_median_eV": 0.0467,
+    "selected_quality": {
+     "ok": true
+    }
+   }
+  }
+ },
+ "state_corrections": [
+  {
+   "energy_expectation_eV": 0.2178,
+   "eigenvalue_shift_status": "ok",
+   "numerical_reliability": {
+    "ok": true
+   }
+  }
+ ]
+}

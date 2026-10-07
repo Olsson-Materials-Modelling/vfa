@@ -1,0 +1,18 @@
+{
+ "schemes": {
+  "FNV_planar_gaussian": {
+   "E_corr_eV": 0.3645,
+   "recommended": true,
+   "status": "ok"
+  },
+  "LZ_scaled_PC_only": {
+   "E_corr_eV": 0.328
+  },
+  "PC_IIC": {
+   "E_corr_eV": 0.3098
+  }
+ },
+ "ks": {
+  "delta_epsilon_eV": -0.1458
+ }
+}
