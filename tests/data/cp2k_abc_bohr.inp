@@ -1,0 +1,12 @@
+&FORCE_EVAL
+  &SUBSYS
+    &CELL
+      ABC [bohr] 10.0 10.0 10.0
+    &END CELL
+    &COORD
+      UNIT bohr
+      A 1.0 0.0 0.0
+      B 0.0 2.0 0.0
+    &END COORD
+  &END SUBSYS
+&END FORCE_EVAL

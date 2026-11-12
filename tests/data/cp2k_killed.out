@@ -1,0 +1,9 @@
+ GLOBAL| Run type                                                         ENERGY
+
+
+ SCF WAVEFUNCTION OPTIMIZATION
+
+  Step     Update method      Time    Convergence         Total energy    Change
+  ------------------------------------------------------------------------------
+     1 OT DIIS     0.80E-01    0.1     0.00010000      -100.0000000000 -1.00E+02
+     2 OT DIIS     0.80E-01    0.1     0.00001000      -100.0000000000 -1.00E-05

@@ -1,0 +1,52 @@
+ GLOBAL| Run type                                                         GEO_OPT
+
+
+ SCF WAVEFUNCTION OPTIMIZATION
+
+  Step     Update method      Time    Convergence         Total energy    Change
+  ------------------------------------------------------------------------------
+     1 OT DIIS     0.80E-01    0.1     0.00010000      -100.0000000000 -1.00E+02
+
+  *** SCF run converged in     1 steps ***
+
+
+  Integrated absolute spin density  :                               1.0000000000
+
+ ENERGY| Total FORCE_EVAL ( QS ) energy [a.u.]:             -100.000000000000
+
+ --------  Informations at step =     1 ------------
+  Optimization Method        =                 BFGS
+
+ SCF WAVEFUNCTION OPTIMIZATION
+
+  Step     Update method      Time    Convergence         Total energy    Change
+  ------------------------------------------------------------------------------
+     1 OT DIIS     0.80E-01    0.1     0.00010000      -100.0000000000 -1.00E+02
+
+  *** SCF run converged in     1 steps ***
+
+
+  Integrated absolute spin density  :                               1.0000000000
+
+ ENERGY| Total FORCE_EVAL ( QS ) energy [a.u.]:             -100.010000000000
+
+ --------  Informations at step =     2 ------------
+  Optimization Method        =                 BFGS
+
+ SCF WAVEFUNCTION OPTIMIZATION
+
+  Step     Update method      Time    Convergence         Total energy    Change
+  ------------------------------------------------------------------------------
+     1 OT DIIS     0.80E-01    0.1     0.00010000      -100.0000000000 -1.00E+02
+
+  Leaving inner SCF loop after reaching     1 steps.
+
+
+ *** WARNING in qs_scf.F:601 :: SCF run NOT converged ***
+
+
+  Integrated absolute spin density  :                               1.0000000000
+
+ ENERGY| Total FORCE_EVAL ( QS ) energy [a.u.]:             -100.020000000000
+
+  **** **** ******  **  PROGRAM ENDED AT

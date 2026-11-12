@@ -1,0 +1,14 @@
+&FORCE_EVAL
+  &SUBSYS
+    &CELL
+      A [angstrom] 10.0 0.0 0.0
+      B [bohr] 0.0 10.0 0.0
+      C [nm] 0.0 0.0 1.0
+    &END CELL
+    &COORD
+      SCALED F
+      UNIT angstrom
+      A 1.0 2.0 3.0
+    &END COORD
+  &END SUBSYS
+&END FORCE_EVAL

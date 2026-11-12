@@ -1,1 +1,1 @@
-"""Bond graph, rings, pair correlations, local geometry and descriptor distributions of a periodic cell."""
+"""Periodic cell geometry, bond graph, rings, pair correlations, total scattering and local geometry."""

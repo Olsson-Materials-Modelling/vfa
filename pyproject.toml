@@ -1,18 +1,31 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "vfa"
-version = "1.0.0"
-description = "Vitriflow enhanced analysis: structural descriptors and void geometry of periodic network structures"
-requires-python = ">=3.9"
-license = {text = "MIT"}
+dynamic = ["version"]
+description = "Vitriflow enhanced analysis: structure, total scattering, voids, electronic spectra, finite-size corrections, statistics and provenance for amorphous periodic network structures"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{name = "Olsson Materials Modelling"}]
-dependencies = ["numpy>=1.24", "scipy>=1.10", "scikit-image>=0.19", "pandas>=2.0"]
+dependencies = ["numpy>=1.24", "scipy>=1.10", "scikit-image>=0.19"]
 
-[tool.setuptools]
-packages = ["vfa", "vfa.io", "vfa.structure", "vfa.voids", "vfa.stats", "vfa.electronic", "vfa.corrections"]
+[project.optional-dependencies]
+parquet = ["pandas>=2.0", "pyarrow"]
+demo = ["pandas>=2.0", "matplotlib>=3.7"]
+test = ["pytest>=7", "pandas>=2.0"]
+
+[project.urls]
+Repository = "https://github.com/Olsson-Materials-Modelling/vfa"
+
+[tool.setuptools.dynamic]
+version = {attr = "vfa.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["vfa*"]
 
 [tool.setuptools.package-data]
 vfa = ["data/*.json", "data/README.md"]

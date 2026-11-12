@@ -1,18 +1,35 @@
 {
- "schemes": {
-  "FNV_planar_gaussian": {
-   "E_corr_eV": 0.3659,
-   "recommended": true,
-   "status": "ok"
-  },
-  "LZ_scaled_PC_only": {
-   "E_corr_eV": 0.3293
-  },
-  "PC_IIC": {
-   "E_corr_eV": 0.311
-  }
+ "inputs": {
+  "tool_name": "cp2k_charge_corrections",
+  "code_version": "0.8.0",
+  "schema_version": "4.0",
+  "defect_cube": "relaxed_charged/rho0.068_2/v_hartree.cube",
+  "bulk_cube": "relaxed_neutral/rho0.068_2/v_hartree.cube"
  },
- "ks": {
-  "delta_epsilon_eV": -0.1464
+ "selected": {
+  "mode": "potential",
+  "scheme": "concerted_FNV_planar_gaussian",
+  "E_corr_eV": 0.1562,
+  "reliability_ok": true,
+  "reasons": [],
+  "impact_eV": 0.0031,
+  "screening": "static",
+  "ionic_geometry": "relaxed",
+  "delta_epsilon_eV": 0.3124,
+  "level_reliability_ok": true
+ },
+ "schemes": {
+  "concerted_FNV_planar_gaussian": {
+   "E_corr_eV": 0.1562
+  },
+  "concerted_LZ_scaled_PC_plus_alignment": {
+   "E_corr_eV": 0.1593
+  },
+  "concerted_PC_IIC": {
+   "E_corr_eV": 0.2343
+  },
+  "concerted_site_gaussian_median": {
+   "E_corr_eV": 0.1718
+  }
  }
 }

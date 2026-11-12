@@ -22,10 +22,10 @@ def softmax_predict(W, X):
 
 
 def held_out_shares(X_train, y_train, X_test, classes, seed=0, n_replicates=400, alpha=0.05, **fit):
-    """Predicted class shares of the test cells from a model fitted on the training cells, with a percentile interval under resampling of the test cells."""
+    """Predicted class shares of the test cells from a model fitted on the training cells, with a percentile interval."""
     W = softmax_fit(standardise(X_train, X_train), y_train, classes, **fit); Xt = standardise(X_train, X_test); rng = np.random.default_rng(seed); P = softmax_predict(W, Xt)
     reps = np.array([softmax_predict(W, Xt[rng.integers(0, len(Xt), len(Xt))]).mean(0) for _ in range(n_replicates)])
-    return dict(classes=list(classes), predicted=P.mean(0), lower=np.array([quantile(reps[:, k], alpha / 2) for k in range(len(classes))]), upper=np.array([quantile(reps[:, k], 1 - alpha / 2) for k in range(len(classes))]), weights=W, log_loss=None)
+    return dict(classes=list(classes), predicted=P.mean(0), lower=np.array([quantile(reps[:, k], alpha / 2) for k in range(len(classes))]), upper=np.array([quantile(reps[:, k], 1 - alpha / 2) for k in range(len(classes))]), weights=W)
 
 
 def log_loss(P, y, classes):
@@ -34,11 +34,12 @@ def log_loss(P, y, classes):
 
 
 def learning_curve(X_train, y_train, X_test, classes, sizes, seed=0, n_replicates=200, alpha=0.05, **fit):
-    """Predicted test shares against the number of training cells (the first n in the given order), with an interval under resampling of those n cells."""
+    """Predicted test shares against the number of training cells, with a percentile interval."""
     rng = np.random.default_rng(seed); rows = []
+    if any(not 1 <= int(n) <= len(y_train) for n in sizes): raise ValueError(f'learning_curve: sizes must lie between 1 and the {len(y_train)} training cells, not {list(sizes)}')
     for n in sizes:
         Xn, yn = X_train[:n], y_train[:n]; pred = softmax_predict(softmax_fit(standardise(Xn, Xn), yn, classes, **fit), standardise(Xn, X_test)).mean(0); reps = []
         for _ in range(n_replicates):
             j = rng.integers(0, n, n); Xb, yb = Xn[j], yn[j]; reps.append(softmax_predict(softmax_fit(standardise(Xb, Xb), yb, classes, **fit), standardise(Xb, X_test)).mean(0))
-        reps = np.array(reps); rows += [dict(n_train=int(n), cls=c, predicted=float(pred[k]), lower=quantile(reps[:, k], alpha / 2), upper=quantile(reps[:, k], 1 - alpha / 2)) for k, c in enumerate(classes)]
+        reps = np.array(reps); rows += [dict(n_train=int(n), kind=c, predicted=float(pred[k]), lower=quantile(reps[:, k], alpha / 2), upper=quantile(reps[:, k], 1 - alpha / 2)) for k, c in enumerate(classes)]
     return rows

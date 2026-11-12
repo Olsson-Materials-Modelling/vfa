@@ -1,16 +1,21 @@
-"""What the void space looks like from each atom: its share of the accessible volume and its distance to the nearest pore."""
+"""The void space seen from each atom: its share of the accessible volume and its distance to the nearest pore."""
 import numpy as np
-from scipy.spatial import cKDTree
-from ..structure.cell import images, minimum_image, volume
+from ..structure.cell import _valid, minimum_image, volume
+from .clearance import _probe, _centres, _covered, _field
 
 
-def atom_free_volume(C, n, cell, positions, probe):
-    """Accessible volume (A3) nearest to each atom: grid points with clearance >= probe, assigned to the closest atom centre."""
-    cell = np.asarray(cell, float); f = np.stack(np.meshgrid(*[(np.arange(m) + 0.5) / m for m in n], indexing='ij'), -1).reshape(-1, 3); free = C.ravel() >= probe
-    rep = images(positions, cell); _, i = cKDTree(rep).query((f @ cell)[free]); out = np.zeros(len(positions)); np.add.at(out, i % len(positions), 1.0)
-    return out * volume(cell) / C.size
+def atom_free_volume(C, n, cell, positions, radii, probe, k=12, chunk=1 << 18, workers=-1):
+    """Accessible volume (A3) of each atom: grid points with clearance >= probe, each owned by the atom with the nearest surface."""
+    pos, cell = _valid(positions, cell, 'atom_free_volume'); C = _field(C, 'atom_free_volume'); n = tuple(int(x) for x in n); probe = _probe(probe, 'atom_free_volume')
+    if C.shape != n: raise ValueError(f'atom_free_volume: the field must have the grid shape {n}, not {C.shape}')
+    free = np.flatnonzero(C.ravel() >= probe)
+    c, own = _covered(pos, cell, radii, lambda: (_centres(free[s:s + chunk], n, cell) for s in range(0, free.size, chunk)), k, chunk, 0.0, workers, 'atom_free_volume', owners=True)
+    if c.size and np.abs(c - C.ravel()[free]).max() > 1e-6: raise ValueError('atom_free_volume: the field is not the clearance of these positions and radii')
+    return np.bincount(own, minlength=len(pos)) * volume(cell) / C.size
 
 
 def cavity_distance(positions, cell, pore_xyz):
     """Distance (A) from each atom to the nearest pore centre, minimum image."""
-    pos = np.asarray(positions, float); return np.array([np.linalg.norm(minimum_image(pore_xyz - p, cell), axis=1).min() for p in pos]) if len(pore_xyz) else np.full(len(pos), np.nan)
+    pos, cell = _valid(positions, cell, 'cavity_distance'); pores = np.asarray(pore_xyz, float).reshape(-1, 3)
+    if not np.all(np.isfinite(pores)): raise ValueError('cavity_distance: the pore centres must be finite')
+    return np.array([np.linalg.norm(minimum_image(pores - p, cell), axis=1).min() for p in pos]) if len(pores) else np.full(len(pos), np.nan)

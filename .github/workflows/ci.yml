@@ -1,12 +1,19 @@
 name: tests and demo
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   run:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: {python-version: "3.11"}
-      - run: pip install -r requirements.txt
+        with: {python-version: "${{ matrix.python-version }}"}
+      - run: pip install -r requirements.txt pyarrow
+      - run: pip wheel --no-deps -w "$RUNNER_TEMP/dist" . && pip install --no-deps "$RUNNER_TEMP"/dist/*.whl
+      - run: cd "$RUNNER_TEMP" && python -c "import vfa, vfa.voids.network, vfa.structure.scattering; print(vfa.__version__)"
       - run: pytest -q
       - run: bash demo/run.sh

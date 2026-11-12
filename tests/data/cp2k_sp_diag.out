@@ -1,0 +1,15 @@
+ GLOBAL| Run type                                                         ENERGY
+
+
+ SCF WAVEFUNCTION OPTIMIZATION
+
+  Step     Update method      Time    Convergence         Total energy    Change
+  ------------------------------------------------------------------------------
+     1 Pulay/Diag.   0.80E-01    0.1     0.00010000      -100.0000000000 -1.00E+02
+
+  *** SCF run converged in     1 steps ***
+
+
+ ENERGY| Total FORCE_EVAL ( QS ) energy [a.u.]:             -100.030000000000
+
+  **** **** ******  **  PROGRAM ENDED AT

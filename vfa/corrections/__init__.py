@@ -1,1 +1,1 @@
-"""Finite-size corrections of charged cells: the gates and the scheme summary around cp2k-charge-corrections."""
+"""Finite-size corrections of charged cells: gates on a pair of single points, the reader of the corrector's output, corrected 0 -> q energies and transition levels."""

@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 
 OKABE_ITO = {'black': '#000000', 'orange': '#E69F00', 'skyblue': '#56B4E9', 'bluishgreen': '#009E73', 'yellow': '#F0E442', 'blue': '#0072B2', 'vermillion': '#D55E00', 'purple': '#CC79A7', 'grey': '#999999'}
-PALETTE = [OKABE_ITO[k] for k in ('blue', 'vermillion', 'bluishgreen', 'orange', 'purple', 'skyblue', 'yellow', 'grey', 'black')]; MARKERS = 'osD^v<>phX'   # colour is never the only encoding
+PALETTE = [OKABE_ITO[k] for k in ('blue', 'vermillion', 'bluishgreen', 'orange', 'purple', 'skyblue', 'yellow', 'grey', 'black')]; MARKERS = 'osD^v<>phX'
 INK, GREY = OKABE_ITO['black'], OKABE_ITO['grey']
-ONE_COLUMN, TWO_COLUMN = 3.35, 7.35                                        # journal column widths (in)
+TWO_COLUMN = 7.35
 
 
 def series(keys):
@@ -39,7 +39,8 @@ def panel_label(ax, label, x=-0.16, y=1.03):
     ax.text(x, y, label, transform=ax.transAxes, ha='right', va='bottom', fontsize=12, fontweight='bold', clip_on=False)
 
 
-def save(fig, out, figures, name):
-    """PDF and 300 dpi PNG to the results, 200 dpi PNG to the figures, marked as synthetic data."""
-    fig.text(0.995, 0.995, 'synthetic data', ha='right', va='top', fontsize=7, color=GREY)
-    fig.savefig(out / f'{name}.pdf', bbox_inches='tight'); fig.savefig(out / f'{name}.png', dpi=300, bbox_inches='tight'); fig.savefig(figures / f'{name}.png', dpi=200, bbox_inches='tight'); plt.close(fig); print('wrote', name)
+def save(fig, out, figures, name, tight=True, stamp='synthetic data'):
+    """PDF and 300 dpi PNG to the results, 200 dpi PNG to the figures, with any stamp in the top right corner."""
+    if stamp: fig.text(0.995, 0.995, stamp, ha='right', va='top', fontsize=7, color=GREY)
+    kw = dict(bbox_inches='tight') if tight else {}
+    fig.savefig(out / f'{name}.pdf', metadata={'CreationDate': None}, **kw); fig.savefig(out / f'{name}.png', dpi=300, **kw); fig.savefig(figures / f'{name}.png', dpi=200, **kw); plt.close(fig); print('wrote', name)

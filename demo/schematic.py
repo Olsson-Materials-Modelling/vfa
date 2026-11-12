@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""The workflow as a diagram with a picture of what each part produces, drawn from the demo's own outputs (demo/figures/fig00_workflow.png)."""
-import sys
+"""The workflow diagram (fig00) drawn from the demo's outputs, written to demo/out and demo/figures."""
+import json, sys
 from pathlib import Path
 import numpy as np, pandas as pd, matplotlib
 matplotlib.use('Agg')
@@ -11,9 +11,10 @@ import style
 from vfa.structure.cell import minimum_image
 from vfa.structure.graph import bond_graph
 from vfa.structure.rings import primitive_rings
-from vfa.corrections.schemes import summarise
+from vfa.corrections.schemes import transition_levels
+from vfa.units import HARTREE_EV
 
-OUT, FIG, DATA = ROOT / 'demo/out', ROOT / 'demo/figures', ROOT / 'example/data'
+OUT, FIG = ROOT / 'demo/out', ROOT / 'demo/figures'
 ACCENT = {'structure': style.OKABE_ITO['blue'], 'voids': style.OKABE_ITO['vermillion'], 'electronic': style.OKABE_ITO['bluishgreen'], 'corrections': style.OKABE_ITO['purple'], 'statistics': style.OKABE_ITO['orange'], 'grey': style.GREY}
 TINT = {'structure': '#EDF3FA', 'voids': '#FBEFE9', 'electronic': '#EAF5F0', 'corrections': '#F6EFF4', 'statistics': '#FEF7E3', 'grey': '#F3F3F3'}
 X = [0.015, 0.265, 0.515, 0.765]; W = 0.22; GAP = 0.03; TITLE, BODY = 8.2, 6.3; LINE = 0.026
@@ -29,17 +30,20 @@ def box(ax, x, y, w, h, title, lines, kind):
 
 
 def bullet(ax, x, y, line):
-    """One line of a box: a bullet before an item, a hanging indent for its continuation (a line starting with two spaces)."""
+    """One bulleted line of a box; a line starting with two spaces continues the previous item."""
     if not line.startswith('  '): ax.text(x + 0.013, y, '\u2022', fontsize=BODY, color=style.INK, ha='left', va='center')
     return ax.text(x + 0.027, y, line.strip(), fontsize=BODY, color=style.INK, ha='left', va='center')
 
 
 def arrow(ax, p, q, color=style.GREY):
+    """Arrow between two points of the diagram, grey unless a colour is given."""
     ax.add_patch(FancyArrowPatch(p, q, arrowstyle='-|>', mutation_scale=8, color=color, linewidth=1.0, shrinkA=0, shrinkB=0))
 
 
 def frame(ia):
-    ia.set_xticks([]); ia.set_yticks([]); [s.set_linewidth(0.5) for s in ia.spines.values()]; [s.set_color(style.GREY) for s in ia.spines.values()]
+    """Grey frame without ticks around an inset picture."""
+    ia.set_xticks([]); ia.set_yticks([]); ia.minorticks_off()
+    for s in ia.spines.values(): s.set_linewidth(0.5); s.set_color(style.GREY)
 
 
 def picture_structure(ia, z, cutoff):
@@ -72,47 +76,54 @@ def picture_electronic(ia, z):
     ia.axhline(float(z['n_atoms']) / 5, color=style.GREY, ls=':', lw=0.8); ia.set_yscale('log'); frame(ia)
 
 
-def picture_corrections(ia, name):
-    """The labelled schemes of one cell's relaxed endpoint, side by side."""
-    s = summarise(DATA / 'corrections' / f'{name}.relaxed.potential.json', DATA / 'corrections' / f'{name}.relaxed.density.json'); items = [('FNV', s.get('fnv_eV')), ('LZ', s.get('lz_eV')), ('PC', s.get('pc_eV')), ('image', s.get('density_image_eV')), ('aligned', s.get('density_corrected_eV'))]
-    items = [(k, v) for k, v in items if v is not None]; ia.bar(range(len(items)), [v for _, v in items], color=[ACCENT['corrections']] * 3 + [style.OKABE_ITO['purple']] * 2, alpha=0.8, edgecolor=style.INK, lw=0.4)
-    ia.set_xticks(range(len(items))); ia.set_xticklabels([k for k, _ in items], fontsize=4.6); ia.set_yticks([]); [s_.set_linewidth(0.5) for s_ in ia.spines.values()]; [s_.set_color(style.GREY) for s_ in ia.spines.values()]; ia.tick_params(length=0)
+def picture_corrections(ia):
+    """Formation energy against Fermi level of the oxygen vacancy in MgO, uncorrected (dashed) and with the static LZ correction (solid), and the transition levels."""
+    m = json.loads((ROOT / 'demo/data/mgo_vacancy.json').read_text()); e0 = next(s['energy_Ha'] for s in m['states'] if s['charge'] == 0); gap = m['host_gap_eV']; fermi = np.array([0.0, gap])
+    colour = {0: style.INK, 1: style.OKABE_ITO['blue'], 2: style.OKABE_ITO['vermillion']}
+    for corrected, ls, face in ((False, (0, (2, 1.5)), 'white'), (True, '-', style.INK)):
+        f = {s['charge']: (s['energy_Ha'] - e0) * HARTREE_EV + s['charge'] * m['host_vbm_eV'] + corrected * s['correction_eV'] for s in m['states']}
+        for q, e in f.items(): ia.plot(fermi, e + q * fermi, color=colour[q], ls=ls, lw=1.0 if corrected else 0.7)
+        for t in transition_levels(f):
+            if 0 <= t['level_eV'] <= gap: ia.plot([t['level_eV']], [f[t['charges'][1]] + t['charges'][1] * t['level_eV']], 'o', ms=3, mfc=face, mec=style.INK, mew=0.6, zorder=3)
+    for q, x, y in ((0, 0.97, -0.55), (1, 0.97, 1.1), (2, 0.5, 2.2)): ia.text(gap * x, y, f'+{q}' if q else '0', color=colour[q], fontsize=BODY, ha='right', va='center')
+    ia.text(0.04, 0.95, 'MgO $V_O$, LZ', transform=ia.transAxes, fontsize=BODY, ha='left', va='top'); ia.set_xlim(0, gap); ia.set_ylim(-4.3, 5.3); frame(ia)
 
 
 def picture_statistics(ia, c, curves):
-    """A trend with density: the cells, the smoothed curve."""
+    """A trend along the ordering column: the cells, the smoothed curve."""
     ia.scatter(c.number_density, c['fraction_p0.8'], s=5, c=style.GREY, lw=0); ia.plot(curves.number_density, curves['fraction_p0.8'], color=ACCENT['statistics'], lw=1.6); frame(ia)
 
 
 def main():
+    """The workflow diagram, with an overflow check on every text box."""
     style.apply(); FIG.mkdir(exist_ok=True); OUT.mkdir(exist_ok=True); fig, ax = plt.subplots(figsize=(style.TWO_COLUMN, 5.9)); fig.subplots_adjust(0, 0, 1, 1); ax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.axis('off'); items = []
-    z = np.load(OUT / 'example_cell.npz', allow_pickle=True); sp = np.load(OUT / 'spectrum_example.npz', allow_pickle=True); cutoff = float(np.load(OUT / 'rdf.npz', allow_pickle=True)['cutoff']); c = pd.read_csv(OUT / 'cells.csv'); curves = pd.read_csv(OUT / 'trend_curves.csv')
+    z = np.load(OUT / 'example_cell.npz'); sp = np.load(OUT / 'spectrum_example.npz'); cutoff = float(np.load(OUT / 'rdf.npz')['cutoff']); c = pd.read_csv(OUT / 'cells.csv'); curves = pd.read_csv(OUT / 'trend_curves.csv')
     y1, h1 = 0.855, 0.115; y2, h2 = 0.395, 0.43; y3, h3 = 0.115, 0.24; y4, h4 = 0.015, 0.08
     items.append(box(ax, X[0], y1, 2 * W + GAP, h1, 'structures and radii', ['extended XYZ, CP2K restart, LAMMPS data', 'radii: centre, covalent, ionic, or your own table'], 'grey'))
     items.append(box(ax, X[2], y1, 2 * W + GAP, h1, 'spectra, energies, corrector output', ['energies, occupations, weights, participation', 'total energies; potential and density JSON'], 'grey'))
-    parts = [('structure', ['bond graph, offsets', 'coordination, angles,', '  tetrahedral order', 'rings: Franzblau, King,', '  Guttman; extents', 'pair correlation, cutoff']),
-             ('voids', ['Voronoi: Di, Df, pores,', '  throats, percolation', 'clearance, grid or', '  points: fraction, surface', 'free volume per atom', 'cavity distance']),
+    parts = [('structure', ['bond graph, offsets', 'coordination, angles,', '  tetrahedral order', 'rings: Franzblau, King,', '  Guttman; extents', 'g(r), cutoff; S(Q), G(r)']),
+             ('voids', ['network: Di, Df, Dif,', '  pores, percolation', 'clearance, grid or', '  points: fraction, surface', 'free volume per atom', 'cavity distance']),
              ('electronic', ['species character', 'semicore alignment', 'band ladder, tail check', 'trap by character', 'onset, thresholds swept', 'trapping energies']),
-             ('corrections', ['gates on a point pair', 'schemes, labelled: FNV,', '  LZ, eFNV, PC, density', '  image, alignment', 'KS shift of the orbital', 'corrected relaxation'])]
+             ('corrections', ['gates on single-point pairs', 'corrector output by path:', '  selected totals, schemes,', '  reliability, level shift', 'corrected 0\u2192q energies', 'transition levels'])]
     for x, (t, l) in zip(X, parts): items.append(box(ax, x, y2, W, h2, t, l, t))
-    pics = [ax.inset_axes([x + 0.012, y2 + 0.012, W - 0.024, 0.195]) for x in X]
-    picture_structure(pics[0], z, cutoff); picture_voids(pics[1], z); picture_electronic(pics[2], sp); picture_corrections(pics[3], str(z['name']))
+    pics = [ax.inset_axes([x + 0.012, y2 + 0.012, W - 0.024, 0.195]) for x in X[:3]] + [ax.inset_axes([X[3] + 0.012, y2 + 0.034, W - 0.024, 0.173])]
+    picture_structure(pics[0], z, cutoff); picture_voids(pics[1], z); picture_electronic(pics[2], sp); picture_corrections(pics[3])
     items.append(box(ax, X[0], y3, 4 * W + 3 * GAP, h3, 'statistics', [], 'statistics'))
-    cols = [['intervals: bootstrap,', '  exact, simultaneous,', '  Wilson'], ['contrasts: Cliff delta,', '  scale ratio, shift'], ['trends: smoothing in', '  order, held-out window', 'change: Theil-Sen and', '  least squares']]
+    cols = [['intervals: bootstrap,', '  Clopper-Pearson,', '  simultaneous, Wilson'], ["contrasts: Cliff's delta,", '  scale ratio, shift'], ['trends: smoothing in', '  order, held-out window', 'change: Theil-Sen and', '  least squares']]
     for k, lines in enumerate(cols):
         for i, l in enumerate(lines): items[-1][0].append(bullet(ax, X[k], y3 + h3 - 0.062 - LINE * i, l))
-    items[-1][0].append(bullet(ax, X[0], y3 + 0.03, 'held-out models, learning curves; the cell is the sampling unit'))
+    items[-1][0].append(bullet(ax, X[0], y3 + h3 - 0.062 - LINE * 3, 'held-out models; the cell is the sampling unit'))
     picture_statistics(ax.inset_axes([X[3] + 0.012, y3 + 0.012, W - 0.024, h3 - 0.06]), c, curves)
-    items.append(box(ax, X[0], y4, 4 * W + 3 * GAP, h4, 'provenance', [], 'grey')); items[-1][0].append(bullet(ax, X[0], y4 + 0.019, 'run context (code, settings, inputs hashed) and a sidecar beside every table'))
+    items.append(box(ax, X[0], y4, 4 * W + 3 * GAP, h4, 'provenance', [], 'grey')); items[-1][0].append(bullet(ax, X[0], y4 + 0.019, 'run context (code and inputs hashed, settings recorded) and a sidecar beside every table'))
     for x in X: arrow(ax, (x + W / 2, y1), (x + W / 2, y2 + h2)); arrow(ax, (x + W / 2, y2), (x + W / 2, y3 + h3))
     arrow(ax, (X[2] + W, y2 + h2 - 0.05), (X[3], y2 + h2 - 0.05), ACCENT['electronic']); arrow(ax, (0.5, y3), (0.5, y4 + h4), ACCENT['statistics'])
     fig.canvas.draw(); r = fig.canvas.get_renderer(); bad = []
-    for texts, (x, y, w, h) in items:
+    for texts, (x, y, w, _) in items:
         for t in texts:
             bb = t.get_window_extent(r).transformed(ax.transAxes.inverted())
             if bb.x1 > x + w - 0.006 or bb.y0 < y + 0.004: bad.append(t.get_text())
     if bad: raise SystemExit('text does not fit its box: ' + '; '.join(bad))
-    style.save(fig, OUT, FIG, 'fig00_workflow')
+    style.save(fig, OUT, FIG, 'fig00_workflow', stamp=None)
 
 
 if __name__ == '__main__':

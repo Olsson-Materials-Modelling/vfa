@@ -1,24 +1,25 @@
 {
+ "inputs": {
+  "tool_name": "cp2k_charge_corrections",
+  "code_version": "0.8.0",
+  "schema_version": "4.0",
+  "rho_charged_cube": "relaxed_charged/rho0.064_3/electron_density.cube",
+  "rho_neutral_cube": "relaxed_neutral/rho0.064_3/electron_density.cube"
+ },
+ "selected": {
+  "mode": "density",
+  "scheme": "bare_carrier_image_plus_DA_model_alignment",
+  "E_corr_eV": 0.1456,
+  "reliability_ok": true,
+  "reasons": [],
+  "impact_eV": 0.0029,
+  "screening": "static",
+  "ionic_geometry": "relaxed",
+  "delta_epsilon_eV": 0.2912,
+  "level_reliability_ok": true,
+  "carrier": "localized"
+ },
  "energies": {
-  "E_corr_eV": 0.2645
- },
- "neutral_pipeline": {
-  "components": {
-   "CD": {
-    "selected_minus_q_median_eV": 0.0467,
-    "selected_quality": {
-     "ok": true
-    }
-   }
-  }
- },
- "state_corrections": [
-  {
-   "energy_expectation_eV": 0.2179,
-   "eigenvalue_shift_status": "ok",
-   "numerical_reliability": {
-    "ok": true
-   }
-  }
- ]
+  "selected_correction_status": "applied_model_referenced_alignment"
+ }
 }

@@ -1,0 +1,30 @@
+ GLOBAL| Run type                                                         ENERGY
+
+
+                        Outer loop SCF in use 
+                        No variables optimised in outer loop
+
+ SCF WAVEFUNCTION OPTIMIZATION
+
+  Step     Update method      Time    Convergence         Total energy    Change
+  ------------------------------------------------------------------------------
+     1 OT DIIS     0.80E-01    0.1     0.00010000      -100.0000000000 -1.00E+02
+
+  Leaving inner SCF loop after reaching     1 steps.
+
+  outer SCF iter =    1 RMS gradient =   1.00E-04 energy =      -100.0100000000
+
+  Leaving inner SCF loop after reaching     1 steps.
+
+  outer SCF iter =    2 RMS gradient =   3.00E-09 energy =      -100.0100000000
+  outer SCF loop converged in   2 iterations or    2 steps
+
+
+ *** WARNING in qs_scf.F:601 :: SCF run NOT converged ***
+
+
+  Integrated absolute spin density  :                               1.1300000000
+
+ ENERGY| Total FORCE_EVAL ( QS ) energy [a.u.]:             -100.010000000000
+
+  **** **** ******  **  PROGRAM ENDED AT

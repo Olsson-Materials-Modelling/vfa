@@ -1,0 +1,11 @@
+&FORCE_EVAL
+  &SUBSYS
+    &CELL
+      CELL_FILE_NAME cell.cif
+      CELL_FILE_FORMAT CIF
+    &END CELL
+    &COORD
+      A 1.0 2.0 3.0
+    &END COORD
+  &END SUBSYS
+&END FORCE_EVAL
