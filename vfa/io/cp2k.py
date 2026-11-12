@@ -88,7 +88,7 @@ def _energy(line, path):
 
 
 def read_output(path):
-    """Ended, whether the last SCF run met its own criterion, total energy (Ha) and integrated absolute spin density, from the last program run."""
+    """Ended, SCF converged, total energy (Ha) and integrated absolute spin density of the last run."""
     r = dict(ended=False, converged=None, energy_Ha=None, spin=None); inner = outer = None; free = False; cdft = off = object()
     for ln in Path(path).read_text(errors='replace').splitlines():
         if 'PROGRAM STARTED AT' in ln: r = dict(ended=False, converged=None, energy_Ha=None, spin=None); inner = outer = None; free = False; cdft = off

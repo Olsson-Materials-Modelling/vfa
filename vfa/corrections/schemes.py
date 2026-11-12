@@ -1,4 +1,4 @@
-"""Reader of the JSON written by cp2k-charge-corrections 0.8.0 (schema 4.0), corrected 0 -> q energies and transition levels."""
+"""Reader of cp2k-charge-corrections 0.8.0 output, corrected energies and transition levels."""
 import json, math, posixpath
 from pathlib import Path
 
@@ -40,7 +40,7 @@ def _run(js, key):
 
 
 def summarise(potential_json, density_json, *, schemes=None, override=False):
-    """One row from the corrector's potential and density JSON of one charged cell: each mode's selected correction, by path."""
+    """One row of corrections from the corrector's two JSON files of one charged supercell."""
     if potential_json is None and density_json is None: raise ValueError('summarise: neither a potential nor a density JSON given')
     if schemes is not None and not isinstance(schemes, dict): raise ValueError(f'summarise: schemes must map scheme names to column names, not {type(schemes).__name__}')
     out = {}
@@ -62,21 +62,21 @@ def summarise(potential_json, density_json, *, schemes=None, override=False):
 
 def _density(row, name):
     status = row.get('density_status')
-    if not isinstance(status, str): raise ValueError(f'{name}: the row was read without a density JSON; corrected energies take the density mode')
+    if not isinstance(status, str): raise ValueError(f'{name}: the row was read without a density JSON')
     v = row.get('density_selected_eV')
     if v is None or not math.isfinite(v): raise ValueError(f"{name}: no selected density correction (status {status}, reasons {row.get('density_reasons')})")
     return float(v)
 
 
-def corrected_addition(e_addition_eV, relaxed, *, override=False):
-    """E(q) - E(0) + C, both cells relaxed in their charge, with C the density mode's selected correction from the charged cell's summarise row."""
-    v = _density(relaxed, 'corrected_addition'); g = relaxed.get('density_ionic_geometry')
-    if isinstance(g, str) and g != 'relaxed' and not override: raise ValueError(f"corrected_addition: the correction was computed at the {g} geometry; pass override=True to accept it")
-    return float(e_addition_eV + v)
+def corrected_formation_energy(formation_eV, row, *, override=False):
+    """Formation energy of the charged supercell plus its finite-size correction E_corr(q) (density_selected_eV)."""
+    v = _density(row, 'corrected_formation_energy'); g = row.get('density_ionic_geometry')
+    if isinstance(g, str) and g != 'relaxed' and not override: raise ValueError(f"corrected_formation_energy: the correction was computed at the {g} geometry; pass override=True to accept it")
+    return float(formation_eV + v)
 
 
 def transition_levels(formation_eV):
-    """Charge transition levels along the lowest formation energy, from {charge: formation energy (eV) at a Fermi level of zero}."""
+    """Transition levels from {q: formation energy (eV) at E_F = 0}."""
     try: f = {float(q): float(e) for q, e in dict(formation_eV).items()}
     except (TypeError, ValueError): f = {}
     if len(f) < 2 or not all(math.isfinite(x) for x in list(f) + list(f.values())): raise ValueError('transition_levels: two or more charges with finite formation energies are needed')

@@ -10,5 +10,5 @@ def trapping_energies(e_neutral, e_charged_relaxed, e_charged_vertical=np.nan, i
 
 
 def closes_cycle(r, tol=1e-9):
-    """Whether addition - vertical addition = -relaxation within tol, for energies assembled from separate sources."""
+    """Whether addition - vertical addition = -relaxation within tol."""
     return bool(abs(r['addition_eV'] - r['vertical_addition_eV'] + r['relaxation_eV']) < tol)

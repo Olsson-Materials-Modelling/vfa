@@ -34,7 +34,7 @@ def groups(c, ctx):
 
 
 def shares(c, at, ctx):
-    """The share of three-fold A among A in every group, over the cells only and with the sites counted."""
+    """The share of three-fold A among A in every group."""
     a = at[at.species == 'A']; per = a.groupby('cell').agg(k=('coordination', lambda z: int((z == 3).sum())), m=('coordination', 'size')).reindex(c.cell); g = c[GROUP].to_numpy(); rows = []
     for u in np.unique(g):
         k, m = per.k.to_numpy()[g == u], per.m.to_numpy()[g == u]; cells, sites = bounded_prevalence(k / m), bounded_prevalence(k / m, sites=m)

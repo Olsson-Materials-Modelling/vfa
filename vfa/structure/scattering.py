@@ -95,7 +95,7 @@ def _same_species(cells, name):
 
 
 def ensemble_direct(cells, q_max, dq=0.05, chunk=1 << 22):
-    """Cell-weighted mean of direct_partials on the shells populated in every cell: mean shell |G|, partials, mean concentrations."""
+    """Mean over cells of direct_partials on the shells present in every cell."""
     cells = list(cells); c = _same_species(cells, 'ensemble_direct'); runs = [_direct(s, p, cl, q_max, dq, chunk, 'ensemble_direct') for s, p, cl in cells]; common = runs[0][0]
     for k, _, _, _ in runs[1:]: common = np.intersect1d(common, k)
     pick = [np.searchsorted(k, common) for k, _, _, _ in runs]; q = np.mean([r[1][i] for r, i in zip(runs, pick)], axis=0)
@@ -103,7 +103,7 @@ def ensemble_direct(cells, q_max, dq=0.05, chunk=1 << 22):
 
 
 def ensemble_transform(cells, q, r_max=None, n_bins=2000, window=None):
-    """Cell-weighted mean of transform_partials over (symbols, positions, cell) triples, and the mean concentrations."""
+    """Mean over cells of transform_partials, and the mean concentrations."""
     cells = list(cells); c = _same_species(cells, 'ensemble_transform'); r_max = min(_r_max(cl, r_max, 'ensemble_transform') for _, _, cl in cells)
     runs = [transform_partials(s, p, cl, q, r_max, n_bins, window) for s, p, cl in cells]; return {p: np.mean([r[p] for r in runs], axis=0) for p in runs[0]}, c
 

@@ -70,7 +70,7 @@ def wilson(k, n, z=Z_975):
 
 
 def influence_mean(x):
-    """Estimate and per-cell influence contributions (x - mean)/n of a mean; their squares sum to (n - 1)/n of the squared standard error."""
+    """Estimate and per-cell influence (x - mean)/n of a mean."""
     x = np.asarray(x, float); est = float(x.mean()); return est, (x - est) / x.size
 
 

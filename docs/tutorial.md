@@ -140,11 +140,11 @@ spectra](conventions.md#electronic-spectra).
 ```python
 from vfa.io.cp2k import read_output
 from vfa.corrections.gates import gate_pair
-from vfa.corrections.schemes import summarise, corrected_addition, transition_levels
+from vfa.corrections.schemes import summarise, corrected_formation_energy, transition_levels
 bad = gate_pair(read_output(charged_log), read_output(neutral_log))           # CP2K outputs: the charged run, the neutral at its geometry; [] if both pass
 row = summarise(f'example/data/corrections/{names[i]}.relaxed.potential.json', f'example/data/corrections/{names[i]}.relaxed.density.json')
-e_add_corr = corrected_addition(e_add, row)                                 # e_add = E(-1) - E(0), both relaxed (trapping_energies)
-levels = transition_levels({0: 0.0, -1: e_add_corr - vbm})                 # vbm: valence-band maximum (eV)
+e_f = corrected_formation_energy(e_f_raw, row)                              # e_f_raw: uncorrected formation energy of charge -1 at E_F = 0, relative to the neutral
+levels = transition_levels({0: 0.0, -1: e_f})
 ```
 
 [Finite-size corrections](conventions.md#finite-size-corrections).
@@ -186,8 +186,8 @@ write_csv(table, 'out/cells.csv', ctx)                                        # 
 ## 13. The demo
 
 `demo/analyse.py` runs steps 2 to 8 on every cell, `demo/modes.py` the modes side by side, `demo/electronic.py` step 9 with
-`summarise` and `corrected_addition`, `demo/statistics.py` step 11, `demo/plot.py` fig01 to fig12 and `demo/schematic.py` fig00.
-`bash demo/run.sh remake` first regenerates the example data (about 10 minutes); `PYTHON` selects the interpreter.
+`summarise` and `corrected_formation_energy`, `demo/statistics.py` step 11, `demo/plot.py` fig01 to fig12 and `demo/schematic.py`
+fig00. `bash demo/run.sh remake` first regenerates the example data (about 10 minutes); `PYTHON` selects the interpreter.
 
 ![fig08_modes](../demo/figures/fig08_modes.png)
 *The modes side by side, colours the radii conventions: a, grid against pointwise accessible fraction; b, the largest included sphere by the network and on the grid (twice the largest clearance); c, convergence of one cell at probe 0.8 Å.*

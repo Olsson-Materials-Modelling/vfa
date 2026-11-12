@@ -2,8 +2,8 @@
 
 ## 1.1.0
 
-- Corrections: reads cp2k-charge-corrections 0.8.0 output (schema 4.0) only; `summarise` options are keyword-only; the comparison
-  schemes are the `concerted_` ones in a relaxed cell; `transition_levels` added.
+- Corrections: reads cp2k-charge-corrections 0.8.0 output (schema 4.0) only; `summarise` options are keyword-only;
+  `corrected_formation_energy` and `transition_levels` added.
 - Voids: the additively weighted Voronoi pore network, exact for unequal radii, with a completeness check (`verify`, `complete`);
   Dif on the percolating component.
 - Structure: total scattering (`structure.scattering`); exact minimum image in any cell; rings with image offsets

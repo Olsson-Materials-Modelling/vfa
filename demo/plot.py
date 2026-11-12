@@ -53,7 +53,7 @@ def fig04(at, name):
     style.save(fig, OUT, FIG, 'fig04_sites')
 
 def fig05(rdf, rho, comp):
-    """The A-B pair correlation of the cells at the example's density with the measured bond cutoff, and the running A-B coordination that the cutoff reads."""
+    """The A-B pair correlation with the measured bond cutoff, and the running A-B coordination."""
     fig, axs = plt.subplots(1, 2, figsize=(style.TWO_COLUMN, 3.0), constrained_layout=True); dens = list(np.round(rdf['densities'], 6))
     cut = float(rdf['cutoff']); r0 = rdf['r']; r = r0.reshape(-1, 4).mean(1); g = rdf['curves_AB'][dens.index(round(rho, 6))]; top = 2.0 * g.reshape(-1, 4).mean(1)[r > cut].max()
     axs[0].plot(r, g.reshape(-1, 4).mean(1), color=style.INK); axs[0].set_ylim(-0.04 * top, top)
@@ -79,7 +79,7 @@ def fig06(z):
 
 
 def fig07(c, curves, change, shares):
-    """A value along the ordering column with its smoothed curve and straight-line change, and a share of sites per group over the cells only and with the sites counted."""
+    """A value along the ordering column with its smoothed curve and straight-line change, and a share of sites per group."""
     fig, axs = plt.subplots(1, 2, figsize=(style.TWO_COLUMN, 3.0), constrained_layout=True); col, _ = style.series(['smoothed', 'theil_sen', 'least_squares']); q = 'trap_below_lumo_eV'; r = change[change.quantity == q].iloc[0]; x = np.array([r.x_low, r.x_high])
     axs[0].scatter(c.number_density, c[q], s=12, color=style.GREY, edgecolors=style.INK, linewidths=0.3, label='cells'); axs[0].plot(curves.number_density, curves[q], color=col['smoothed'], lw=1.6, label=f'smoothed, window {int(r.window_cells)} cells')
     for key, lab, ls in (('theil_sen', 'Theil–Sen', '-'), ('least_squares', 'least squares', '--')): axs[0].plot(x, [r[f'{key}_low'], r[f'{key}_high']], color=col[key], lw=1.2, ls=ls, label=f"{lab}: change {r[f'{key}_change']:+.2f} [{r[f'{key}_lower']:+.2f}, {r[f'{key}_upper']:+.2f}] eV")

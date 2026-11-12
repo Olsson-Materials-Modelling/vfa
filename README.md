@@ -26,7 +26,7 @@ level across the gap (neutral = 0), dashed uncorrected, solid with the static LZ
                        included and free spheres, percolation, pores and throats; free volume at each atom
     vfa/electronic     spectra as tables: species character, semicore alignment, band ladder, trap by character,
                        delocalisation onset, internal depth; trapping energies; Mulliken tracking
-    vfa/corrections    gates on a pair of single points; the reader of the corrector's output; corrected 0 -> q energies,
+    vfa/corrections    gates on a pair of single points; the reader of the corrector's output; corrected formation energies,
                        transition levels
     vfa/stats          bootstrap, exact, Clopper-Pearson and Wilson intervals, simultaneous bands; effect sizes; trends
                        along an ordering variable; held-out models

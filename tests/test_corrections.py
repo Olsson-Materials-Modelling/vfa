@@ -1,9 +1,9 @@
-"""The reader of the corrector's JSON on real schema-4.0 output and synthetic files, corrected 0 -> q energies and transition levels."""
+"""The reader of the corrector's JSON, corrected energies and transition levels."""
 import copy, json, sys
 from pathlib import Path
 import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from vfa.corrections.schemes import summarise, corrected_addition, transition_levels
+from vfa.corrections.schemes import summarise, corrected_formation_energy, transition_levels
 
 DATA = Path(__file__).resolve().parent / 'data'
 INPUTS = {'tool_name': 'cp2k_charge_corrections', 'code_version': '0.8.0', 'schema_version': '4.0'}
@@ -20,7 +20,7 @@ def write(tmp_path, pot=POT, dens=DENS):
 
 
 def real(leg):
-    """The potential and density JSON written by cp2k-charge-corrections 0.8.0 for one leg of a synthetic cell."""
+    """The potential and density JSON written by cp2k-charge-corrections 0.8.0."""
     return DATA / f'corrector_{leg}.potential.json', DATA / f'corrector_{leg}.density.json'
 
 
@@ -31,7 +31,7 @@ def test_real_corrector_output_is_read_by_its_selected_block():
         assert (s['density_ionic_geometry'], s['density_screening'], s['potential_ionic_geometry'], s['potential_screening']) == (geometry, screening, geometry, screening) and s['density_carrier'] == d['carrier']
         sc = json.loads(real(leg)[0].read_text())['schemes']; static = 'concerted_' if leg == 'relaxed' else ''
         assert s['fnv_eV'] == sc[static + 'FNV_planar_gaussian']['E_corr_eV'] and s['pc_eV'] == sc[static + 'PC_IIC']['E_corr_eV'] and s['lz_eV'] == sc[static + 'LZ_scaled_PC_plus_alignment']['E_corr_eV'] and s['site_eV'] is None
-    cr = summarise(*real('relaxed')); assert corrected_addition(-1.0, cr) == -1.0 + cr['density_selected_eV']
+    cr = summarise(*real('relaxed')); assert corrected_formation_energy(-1.0, cr) == -1.0 + cr['density_selected_eV']
 
 
 def test_selected_values_read_exactly(tmp_path):
@@ -79,14 +79,14 @@ def row(selected, geometry, screening):
     return dict(density_selected_eV=selected, density_ionic_geometry=geometry, density_screening=screening, density_status='applied', density_reasons=[])
 
 
-def test_corrected_addition_takes_the_relaxed_cell_and_refuses_a_missing_density_correction():
-    assert corrected_addition(-1.5, row(0.19, 'relaxed', 'static')) == -1.5 + 0.19 and corrected_addition(-1.5, row(0.25, None, 'as_given')) == -1.5 + 0.25
-    with pytest.raises(ValueError, match='vertical geometry'): corrected_addition(-1.5, row(0.3, 'vertical', 'clamped'))
-    assert corrected_addition(-1.5, row(0.3, 'vertical', 'clamped'), override=True) == -1.5 + 0.3
+def test_corrected_formation_energy_takes_the_relaxed_cell_and_refuses_a_missing_density_correction():
+    assert corrected_formation_energy(-1.5, row(0.19, 'relaxed', 'static')) == -1.5 + 0.19 and corrected_formation_energy(-1.5, row(0.25, None, 'as_given')) == -1.5 + 0.25
+    with pytest.raises(ValueError, match='vertical geometry'): corrected_formation_energy(-1.5, row(0.3, 'vertical', 'clamped'))
+    assert corrected_formation_energy(-1.5, row(0.3, 'vertical', 'clamped'), override=True) == -1.5 + 0.3
     nan = float('nan'); potential_only = dict(summarise(real('relaxed')[0], None), **{k: nan for k in row(0, 0, 0)})
     for r, why in ((row(None, 'relaxed', 'static'), 'no selected density correction'), (row(nan, 'relaxed', 'static'), 'no selected density correction'), (summarise(real('relaxed')[0], None), 'read without a density JSON'), (potential_only, 'read without a density JSON')):
         for override in (False, True):
-            with pytest.raises(ValueError, match=why): corrected_addition(-1.0, r, override=override)
+            with pytest.raises(ValueError, match=why): corrected_formation_energy(-1.0, r, override=override)
 
 
 def test_transition_levels_follow_the_lowest_formation_energy():
@@ -154,7 +154,7 @@ def test_a_charge_lowest_within_1e_13_of_a_crossing_is_a_tie_and_within_1e_9_is_
     t = transition_levels({0: 0.0, 1: -1.0 - 1e-9, 2: -2.0}); assert [x['charges'] for x in t] == [(2, 1), (1, 0)] and abs(t[0]['level_eV'] - (1 - 1e-9)) < 1e-14 and abs(t[1]['level_eV'] - (1 + 1e-9)) < 1e-14
 
 
-def test_corrected_addition_takes_override_by_keyword_only():
+def test_corrected_formation_energy_takes_override_by_keyword_only():
     r = dict(density_selected_eV=0.3, density_ionic_geometry='vertical', density_screening='clamped', density_status='applied', density_reasons=[])
-    with pytest.raises(TypeError): corrected_addition(-1.5, r, True)
-    assert corrected_addition(-1.5, r, override=True) == -1.5 + 0.3
+    with pytest.raises(TypeError): corrected_formation_energy(-1.5, r, True)
+    assert corrected_formation_energy(-1.5, r, override=True) == -1.5 + 0.3

@@ -104,7 +104,7 @@ def main():
     parts = [('structure', ['bond graph, offsets', 'coordination, angles,', '  tetrahedral order', 'rings: Franzblau, King,', '  Guttman; extents', 'g(r), cutoff; S(Q), G(r)']),
              ('voids', ['network: Di, Df, Dif,', '  pores, percolation', 'clearance, grid or', '  points: fraction, surface', 'free volume per atom', 'cavity distance']),
              ('electronic', ['species character', 'semicore alignment', 'band ladder, tail check', 'trap by character', 'onset, thresholds swept', 'trapping energies']),
-             ('corrections', ['gates on single-point pairs', 'corrector output by path:', '  selected totals, schemes,', '  reliability, level shift', 'corrected 0\u2192q energies', 'transition levels'])]
+             ('corrections', ['gates on single-point pairs', 'corrector output by path:', '  selected totals, schemes,', '  reliability, level shift', 'corrected formation', '  energies, transition levels'])]
     for x, (t, l) in zip(X, parts): items.append(box(ax, x, y2, W, h2, t, l, t))
     pics = [ax.inset_axes([x + 0.012, y2 + 0.012, W - 0.024, 0.195]) for x in X[:3]] + [ax.inset_axes([X[3] + 0.012, y2 + 0.034, W - 0.024, 0.173])]
     picture_structure(pics[0], z, cutoff); picture_voids(pics[1], z); picture_electronic(pics[2], sp); picture_corrections(pics[3])

@@ -104,15 +104,15 @@ check.
 
 `corrections.schemes.summarise(potential_json, density_json)` reads the JSON of
 [cp2k-charge-corrections](https://github.com/Olsson-Materials-Modelling/cp2k-charge-corrections) 0.8.0 (schema 4.0) into one row:
-each mode's selected correction, reliability and level shift, and the schemes FNV, LZ, PC and site (their `concerted_` forms at a
-relaxed geometry; None when not written). `schemes={name: column}` replaces these four. Files from different corrector versions,
-geometries or screening are refused, as are cubes whose last two directory names differ (`override=True` accepts them).
+E_corr(q) by both methods, their reliability and level shift, and the schemes FNV, LZ, PC and site (None when not written).
+`schemes={name: column}` replaces these four. Files from different corrector versions, geometries or screening are refused, as are
+cubes whose last two directory names differ (`override=True` accepts them).
 
-`corrected_addition(e_add, row)` returns E(q) - E(0) plus the density mode's selected correction, both cells relaxed in their
-charge; another declared geometry needs `override=True`, an undeclared one is accepted. It does not check reliability: read
-`density_reliable` and `density_status`. `transition_levels({q: formation energy at a Fermi level of zero})` returns the levels
-from the highest charge down, also outside the gap. How each correction is defined: [the corrector's
-conventions](https://github.com/Olsson-Materials-Modelling/cp2k-charge-corrections/blob/v0.8.0/docs/conventions.md).
+`corrected_formation_energy(formation_eV, row)` adds E_corr(q) = `row['density_selected_eV']`, the finite-size correction of the
+charged supercell, to its uncorrected formation energy. Another declared geometry needs `override=True`; an undeclared one is
+accepted. Reliability is not checked: read `density_reliable` and `density_status`. `transition_levels({q: formation energy at a
+Fermi level of zero})` returns the levels from the highest charge down, also outside the gap. How each correction is defined: [the
+corrector's conventions](https://github.com/Olsson-Materials-Modelling/cp2k-charge-corrections/blob/v0.8.0/docs/conventions.md).
 
 ## Statistics
 

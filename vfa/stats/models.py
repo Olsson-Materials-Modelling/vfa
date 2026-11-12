@@ -1,4 +1,4 @@
-"""Held-out classification of cells from a few descriptors: a multinomial logistic model with every choice made inside the training cells."""
+"""Held-out classification of cells by multinomial logistic regression."""
 import numpy as np
 from .intervals import quantile
 

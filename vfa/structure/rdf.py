@@ -33,7 +33,7 @@ def partial_rdf(symbols, positions, cell, pair, r_max=None, n_bins=1000):
 
 
 def ensemble_rdf(cells, pair, r_max=None, n_bins=1000):
-    """Cell-weighted mean partial RDF over (symbols, positions, cell) triples, up to r_max (default: the smallest limit of any cell)."""
+    """Mean partial RDF over cells, up to r_max (default: the smallest limit of any cell)."""
     cells = list(cells)
     if not cells: raise ValueError('ensemble_rdf: no cells')
     for _, pos, c in cells: _valid(pos, c, 'ensemble_rdf')
