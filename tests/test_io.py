@@ -6,11 +6,12 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from vfa import units
 from vfa.io.cp2k import read_restart, read_output, read_pdos_kind, read_spectrum, mulliken_blocks, trajectory_energies, cube_header
-from vfa.io.extxyz import read_extxyz, write_extxyz, read_structure_files
+from vfa.io.extxyz import read_extxyz, write_extxyz, read_structure_files, structure_paths
 from vfa.io.lammps import read_lammps_data
 from vfa.corrections.gates import gate_pair
 
 D = Path(__file__).resolve().parent / 'data'; XYZ = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]], float)
+EMPTY = dict(ended=False, converged=None, energy_Ha=None, spin=None, unoccupied_converged=None, optimised=None)
 
 
 def test_read_output_judges_the_last_scf_by_its_own_criterion(tmp_path):
@@ -18,7 +19,7 @@ def test_read_output_judges_the_last_scf_by_its_own_criterion(tmp_path):
              'cp2k_geo_last_failed.out': False, 'cp2k_geo_last_failed_outer.out': False, 'cp2k_geo_recovered.out': True, 'cp2k_killed.out': None}
     for name, want in cases.items(): assert read_output(str(D / name))['converged'] is want, name
     con = tmp_path / 'constrained.out'; con.write_text((D / 'cp2k_sp_ot_inner_short.out').read_text().replace('No variables optimised in outer loop', 'DDAPC constraint enforced'))
-    assert read_output(con)['converged'] is False and set(read_output(D / 'cp2k_sp_ot.out')) == {'ended', 'converged', 'energy_Ha', 'spin'}
+    assert read_output(con)['converged'] is False and set(read_output(D / 'cp2k_sp_ot.out')) == set(EMPTY)
     r = read_output(D / 'cp2k_sp_ot.out'); assert r['ended'] and r['energy_Ha'] == -100.01 and r['spin'] == 1.05
     assert not read_output(D / 'cp2k_sp_diag_abort.out')['ended'] and read_output(D / 'cp2k_sp_diag.out')['spin'] is None and read_output(D / 'cp2k_geo_last_failed.out')['energy_Ha'] == -100.02
 
@@ -30,13 +31,13 @@ def test_read_output_takes_the_cdft_verdict_and_the_last_program_run(tmp_path):
     for name, text, want in (('ok', loop + ok + end, True), ('failed', loop + failed + end, False), ('killed', loop, None), ('then_plain', loop + failed + scf + end, True), ('ok_then_killed', loop + ok + ' CDFT EXTERNAL SCF WAVEFUNCTION OPTIMIZATION\n' + scf, None)):
         p = tmp_path / f'cdft_{name}.out'; p.write_text(start + text); assert read_output(p)['converged'] is want, name
     ot, con = (D / 'cp2k_sp_ot.out').read_text(), (D / 'cp2k_sp_ot_inner_short.out').read_text().replace('No variables optimised in outer loop', 'DDAPC constraint enforced')
-    for name, text, want in (('killed', (D / 'cp2k_killed.out').read_text(), dict(ended=False, converged=None, energy_Ha=None, spin=None)), ('constrained', con, dict(read_output(D / 'cp2k_sp_ot_inner_short.out'), converged=False))):
+    for name, text, want in (('killed', (D / 'cp2k_killed.out').read_text(), EMPTY), ('constrained', con, dict(read_output(D / 'cp2k_sp_ot_inner_short.out'), converged=False))):
         p = tmp_path / f'appended_{name}.out'; p.write_text(start + ot + start + text); assert read_output(p) == want, name
     p = tmp_path / 'appended_killed.out'; assert gate_pair(read_output(p), read_output(D / 'cp2k_sp_diag.out')) == ['charged run did not end', 'charged last SCF printed no verdict']
     short = ' SCF WAVEFUNCTION OPTIMIZATION\n\n  Leaving inner SCF loop after reaching     1 steps.\n'; spin = '  Integrated absolute spin density  :                               1.0000000000\n'
-    for name, text, want in (('seed_then_killed', scf + spin + end.split('\n')[0] + '\n' + ' SCF WAVEFUNCTION OPTIMIZATION\n', dict(ended=False, converged=None, energy_Ha=None, spin=None)),
-                             ('cdft_ok_last_inner_short', loop + short + ok + end, dict(ended=True, converged=False, energy_Ha=-100.03, spin=None)),
-                             ('cdft_killed_after_header', loop + ok + spin + end.split('\n')[0] + '\n' + ' CDFT EXTERNAL SCF WAVEFUNCTION OPTIMIZATION\n', dict(ended=False, converged=None, energy_Ha=None, spin=None))):
+    for name, text, want in (('seed_then_killed', scf + spin + end.split('\n')[0] + '\n' + ' SCF WAVEFUNCTION OPTIMIZATION\n', EMPTY),
+                             ('cdft_ok_last_inner_short', loop + short + ok + end, dict(EMPTY, ended=True, converged=False, energy_Ha=-100.03)),
+                             ('cdft_killed_after_header', loop + ok + spin + end.split('\n')[0] + '\n' + ' CDFT EXTERNAL SCF WAVEFUNCTION OPTIMIZATION\n', EMPTY)):
         p = tmp_path / f'{name}.out'; p.write_text(start + text); assert read_output(p) == want, name
 
 
@@ -110,7 +111,7 @@ def test_read_extxyz_frames_pbc_and_properties(tmp_path):
         with pytest.raises(ValueError, match=msg): read_extxyz(D / name)
     (tmp_path / 'set').mkdir(); write_extxyz(str(tmp_path / 'set' / 'b.extxyz'), ['A', 'B'], XYZ[:2], np.eye(3) * 10); write_extxyz(tmp_path / 'set' / 'a.extxyz', ['B'], XYZ[2:], np.eye(3) * 12)
     names, frames = read_structure_files(str(tmp_path / 'set')); assert names == ['a', 'b'] and list(frames[1][0]) == ['A', 'B'] and np.allclose(frames[1][1], XYZ[:2]) and np.allclose(frames[0][2], np.eye(3) * 12)
-    with pytest.raises(FileNotFoundError, match='no .extxyz file'): read_structure_files(tmp_path / 'none')
+    with pytest.raises(FileNotFoundError, match='no .extxyz or .xyz file'): read_structure_files(tmp_path / 'none')
 
 
 def test_read_spectrum_spin_restricted_appended_and_total_column(tmp_path):
@@ -253,3 +254,72 @@ def test_read_spectrum_refuses_kinds_that_list_different_states(tmp_path):
     for p in (D / 'pdos_uks').glob('*ALPHA*.pdos'): (tmp_path / p.name).write_text(p.read_text())
     f = sorted(tmp_path.glob('*.pdos'))[-1]; lines = f.read_text().splitlines(); f.write_text('\n'.join(lines[:-1]) + '\n')
     with pytest.raises(ValueError, match='list different states'): read_spectrum(tmp_path)
+
+
+def test_read_output_flags_unconverged_empty_states_and_an_optimisation_that_did_not_complete(tmp_path):
+    ot, end = (D / 'cp2k_sp_ot.out').read_text(), '  **** **** ******  **  PROGRAM ENDED AT'
+    lumo, warn = '  Using OT eigensolver for additional unoccupied orbitals spin            {}\n', ' WARNING : did not converge in ot_eigensolver\n'
+    geo, cell = ' ***                     STARTING GEOMETRY OPTIMIZATION                      ***\n', ' ***                     STARTING   CELL   OPTIMIZATION                      ***\n'
+    done = ' ***                    GEOMETRY OPTIMIZATION COMPLETED                      ***\n'
+    for name, extra, key, want in (('lumo', lumo.format(1) + lumo.format(2), 'unoccupied_converged', True), ('lumo_failed', lumo.format(1) + warn + lumo.format(2), 'unoccupied_converged', False),
+                                   ('no_lumo', '', 'unoccupied_converged', None), ('geo_done', geo + done, 'optimised', True), ('cell_done', cell + done, 'optimised', True),
+                                   ('geo_limit', geo + ' *** MAXIMUM NUMBER OF OPTIMIZATION STEPS REACHED ***\n', 'optimised', False), ('cell_limit', cell, 'optimised', False),
+                                   ('geo_walltime', geo + ' *** GEO run terminated - exceeded requested execution time:       9.000 seconds\n', 'optimised', False),
+                                   ('dimer_rotation', ' ***                    ROTATION OPTIMIZATION COMPLETED                      ***\n', 'optimised', None), ('no_optimiser', '', 'optimised', None),
+                                   ('md_shells', done + ' *** MAXIMUM NUMBER OF OPTIMIZATION STEPS REACHED ***\n' + done, 'optimised', None)):
+        p = tmp_path / f'{name}.out'; p.write_text(ot.replace(end, extra + end)); assert read_output(p)[key] is want, name
+    assert gate_pair(read_output(tmp_path / 'geo_limit.out'), read_output(D / 'cp2k_sp_diag.out')) == ['charged optimisation did not complete']
+
+
+def test_read_output_starts_afresh_when_a_rerun_aborts_on_its_input(tmp_path):
+    box = ' *******************************************************************************\n * [ABORT]                                                                     *\n *  \\___/           found an unknown keyword MULTIPLICTY in section DFT        *\n'
+    p = tmp_path / 'rerun.out'; p.write_text((D / 'cp2k_sp_ot.out').read_text() + box); assert read_output(p) == EMPTY
+    assert gate_pair(read_output(p), read_output(D / 'cp2k_sp_diag.out')) == ['charged run did not end', 'charged last SCF printed no verdict'] and read_output(D / 'cp2k_sp_diag_abort.out')['converged'] is False
+
+
+def test_read_restart_reads_quoted_values_and_takes_the_element_as_cp2k_does(tmp_path):
+    f = tmp_path / 'w-1.restart'; f.write_text(' &FORCE_EVAL\n   &SUBSYS\n     &CELL\n       A 10.0 0.0 0.0\n       B 0.0 10.0 0.0\n       C 0.0 0.0 10.0\n     &END CELL\n     &COORD\n       UNIT "bohr"\n'
+                                              '       O1 1.0 2.0 3.0\n       H_a 1.0 2.0 4.0\n       Hb 1.0 3.0 3.0\n       Si2_b 2.0 2.0 3.0\n     &END COORD\n     &KIND "O1"\n       ELEMENT "O"\n     &END KIND\n'
+                                              '     &KIND "H_a"\n     &END KIND\n     &KIND Hb\n       ELEMENT_SYMBOL H\n     &END KIND\n   &END SUBSYS\n &END FORCE_EVAL\n')
+    s, p, c = read_restart(f); assert s.tolist() == ['O', 'H', 'H', 'Si'] and np.allclose(p[0], np.array([1, 2, 3]) * units.BOHR_A) and np.allclose(c, np.eye(3) * 10)
+    f.write_text(f.read_text().replace('Si2_b', '_H'))
+    with pytest.raises(ValueError, match='kind _H has no ELEMENT and its label names none'): read_restart(f)
+
+
+def test_read_spectrum_skips_restricted_curve_files_and_other_projections(tmp_path):
+    for p in (D / 'pdos_rks').glob('*.pdos'): (tmp_path / p.name.replace('run-', 'si-kpts-')).write_text(p.read_text())
+    (tmp_path / 'si-kpts-k1_curve-1.pdos').write_text('# Projected DOS for atomic kind A at iteration step i = 0\n#  Energy [a.u.]   s   p\n -0.5  0.1  0.2\n')
+    (tmp_path / 'si-kpts-list1-1.pdos').write_text('# Projected DOS for list 1 of atoms at iteration step i = 0\n')
+    assert np.allclose(read_spectrum(tmp_path, spin=None)[0], read_spectrum(D / 'pdos_rks', spin=None)[0])
+
+
+def test_read_lammps_data_takes_the_units_and_type_labels_write_data_records(tmp_path):
+    head = 'LAMMPS data file via write_data, version 29 Aug 2024, timestep = 0, units = {}\n\n2 atoms\n2 atom types\n\n0.0 10.0 xlo xhi\n0.0 10.0 ylo yhi\n0.0 10.0 zlo zhi\n\nAtom Type Labels\n\n1 {}\n2 O\n\nAtoms # atomic\n\n'
+    f = tmp_path / 'l.data'; f.write_text(head.format('electron', 'Si') + '1 Si 1.0 2.0 3.0\n2 O 4.0 5.0 6.0\n')
+    s, p, c = read_lammps_data(f, ['Si', 'O']); assert s.tolist() == ['Si', 'O'] and np.allclose(p, XYZ[:2] * units.BOHR_A) and np.allclose(c, np.eye(3) * 10 * units.BOHR_A)
+    with pytest.raises(ValueError, match='atom type 1 is Si in the file, O in type_to_species'): read_lammps_data(f, ['O', 'Si'])
+    f.write_text(head.format('metal', 'Ob') + '1 1 1.0 2.0 3.0\n2 2 4.0 5.0 6.0\n'); s, p, c = read_lammps_data(f, ['O', 'O']); assert s.tolist() == ['O', 'O'] and np.allclose(p, XYZ[:2])
+    f.write_text(head.format('lj', 'Pd') + '1 1 1.0 2.0 3.0\n2 2 4.0 5.0 6.0\n'); assert np.allclose(read_lammps_data(f, ['Pd', 'O'])[1], XYZ[:2])
+    with pytest.raises(ValueError, match='atom type 1 is Pd in the file, Ru in type_to_species'): read_lammps_data(f, ['Ru', 'O'])
+    f.write_text(head.format('nonsense', 'Si') + '1 1 1.0 2.0 3.0\n2 2 4.0 5.0 6.0\n')
+    with pytest.raises(ValueError, match='units nonsense have no length in A'): read_lammps_data(f, ['Si', 'O'])
+
+
+def test_read_extxyz_takes_whole_keys_with_escapes_and_the_exact_names(tmp_path):
+    lat, other = 'Lattice="8.2 0.0 0.0 0.4 8.6 0.0 0.3 -0.2 9.1"', '"8.0 0.0 0.0 0.0 8.0 0.0 0.0 0.0 8.0"'
+    for name, head, row in (('info_lattice', f'{lat} Properties=species:S:1:pos:R:3 lattice={other} pbc="T T T"', 'Si 1.0 2.0 3.0'),
+                            ('dotted_key', f'{lat} Properties=species:S:1:pos:R:3 initial.Lattice={other} pbc="T T T"', 'Si 1.0 2.0 3.0'),
+                            ('escaped_quote', f'{lat} Properties=species:S:1:pos:R:3:forces:R:3 note="from \\"run1\\" Properties=species:S:1:forces:R:3:pos:R:3" pbc="T T T"', 'Si 1.0 2.0 3.0 9.0 9.0 9.0'),
+                            ('species_column', f'{lat} Properties=species:S:1:pos:R:3:Species:S:1 pbc="T T T"', 'Si 1.0 2.0 3.0 Si0')):
+        p = tmp_path / f'{name}.extxyz'; p.write_text(f'1\n{head}\n{row}\n'); s, x, c = read_extxyz(p)
+        assert s.tolist() == ['Si'] and np.allclose(x, [[1, 2, 3]]) and np.allclose(c, [[8.2, 0, 0], [0.4, 8.6, 0], [0.3, -0.2, 9.1]]), name
+    p = tmp_path / 'case.extxyz'; p.write_text(f'1\nlattice={other} LATTICE={other} pbc="T T T"\nSi 1.0 2.0 3.0\n')
+    with pytest.raises(ValueError, match='keys lattice and LATTICE differ only by case'): read_extxyz(p)
+
+
+def test_read_structure_files_reads_xyz_in_any_case_and_skips_hidden_files(tmp_path):
+    for name in ('a.extxyz', 'b.xyz', 'c.EXTXYZ'): write_extxyz(tmp_path / name, ['A'], XYZ[:1], np.eye(3) * 10)
+    (tmp_path / '._a.extxyz').write_bytes(b'\x00\x05\x16\x07'); assert read_structure_files(tmp_path)[0] == ['a', 'b', 'c'] and [p.name for p in structure_paths(tmp_path)] == ['a.extxyz', 'b.xyz', 'c.EXTXYZ']
+    write_extxyz(tmp_path / 'a.xyz', ['A'], XYZ[:1], np.eye(3) * 10)
+    with pytest.raises(ValueError, match=r"read_structure_files: .*two files share a name: \['a.extxyz', 'a.xyz'\]"): read_structure_files(tmp_path)
+    with pytest.raises(FileNotFoundError, match='structure_paths: no .extxyz or .xyz file'): structure_paths(tmp_path / 'none')

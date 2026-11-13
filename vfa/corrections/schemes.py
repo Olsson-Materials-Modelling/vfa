@@ -4,6 +4,7 @@ from pathlib import Path
 
 TOOL = 'cp2k_charge_corrections'; SCHEMA = '4.0'
 POTENTIAL_SCHEMES = {'FNV_planar_gaussian': 'fnv', 'LZ_scaled_PC_plus_alignment': 'lz', 'PC_IIC': 'pc', 'site_gaussian_median': 'site'}
+PREFIX = {'relaxed': 'concerted_', 'vertical': 'clamped_'}
 SELECTED = (('scheme', 'scheme'), ('selected_eV', 'E_corr_eV'), ('reliable', 'reliability_ok'), ('reasons', 'reasons'), ('impact_eV', 'impact_eV'), ('screening', 'screening'), ('ionic_geometry', 'ionic_geometry'), ('level_shift_eV', 'delta_epsilon_eV'))
 
 
@@ -55,7 +56,7 @@ def summarise(potential_json, density_json, *, schemes=None, override=False):
             if not override and k and pa[-k:] != pb[-k:]: raise ValueError(f"summarise: the {state} cubes were read from {'/'.join(pa)} for the potential and {'/'.join(pb)} for the density: different runs (override=True accepts them)")
         out.update(schema_version=SCHEMA, code_version=code, **_selected(js, 'potential', w))
         if density_json is not None and (out['potential_ionic_geometry'], out['potential_screening']) != (out['density_ionic_geometry'], out['density_screening']): raise ValueError(f"summarise: the potential JSON is for the {out['potential_ionic_geometry'] or 'undeclared'} geometry with {out['potential_screening']} screening, the density JSON for the {out['density_ionic_geometry'] or 'undeclared'} one with {out['density_screening']}")
-        pick = schemes if schemes is not None else {('concerted_' if out['potential_ionic_geometry'] == 'relaxed' else '') + k: v for k, v in POTENTIAL_SCHEMES.items()}
+        pick = schemes if schemes is not None else {PREFIX.get(out['potential_ionic_geometry'], '') + k: v for k, v in POTENTIAL_SCHEMES.items()}
         for name, col in pick.items(): out[f'{col}_eV'] = _at(js, ('schemes', name, 'E_corr_eV'), w) if schemes is not None or name in _at(js, ('schemes',), w) else None
     return out
 

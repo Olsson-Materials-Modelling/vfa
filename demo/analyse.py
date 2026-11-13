@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 import numpy as np, pandas as pd
 ROOT = Path(__file__).resolve().parents[1]; sys.path.insert(0, str(ROOT))
-from vfa.io.extxyz import read_structure_files
+from vfa.io.extxyz import read_structure_files, structure_paths
 from vfa.structure.cell import volume, shortest_vector
 from vfa.voids.radii import Radii
 from vfa.structure.graph import bond_graph, coordination, bond_vectors, angles, tetrahedral_order
@@ -49,7 +49,7 @@ def main():
             np.savez_compressed(OUT / 'example_cell.npz', cell=cell, symbols=sym, positions=pos, slice_z=(k + 0.5) / n[2] * cell[2, 2], slice=C[:, :, k], field=C.astype(np.float32), shape=n, probe=PROBE, pore_xyz=pores['pore_xyz'], pore_r=pores['pore_r'],
                                 pore_percolating=pores['pore_percolating'], throat_pairs=pores['throat_pairs'], Df_A=vd['Df_A'], Di_A=vd['Di_A'], name=name)
         print(f"{name}: z_A {row['z_A']:.2f}, rings {len(rings)}, Di {vd['Di_A']:.2f} Df {vd['Df_A']:.2f} A, accessible {row['fraction_p0.8']:.3f}, pores {len(pores['pore_r'])}, network {vd['n_nodes']} nodes, complete {vd['complete']}", flush=True)
-    ctx = RunContext().with_config(dict(probes=PROBES, probe=PROBE, dx=DX, ring_cap=RING_CAP, cutoff_A=cutoff, radii=radii.name, radii_A=radii.table)).with_inputs(sorted((DATA / 'structures').glob('*.extxyz')) + [DATA / 'cells.csv', DATA / 'radii.json'])
+    ctx = RunContext().with_config(dict(probes=PROBES, probe=PROBE, dx=DX, ring_cap=RING_CAP, cutoff_A=cutoff, radii=radii.name, radii_A=radii.table)).with_inputs(structure_paths(DATA / 'structures') + [DATA / 'cells.csv', DATA / 'radii.json'])
     for df, f in ((rows, 'cells.csv'), (sweep, 'sweep.csv'), (atoms, 'atoms.csv')): write_csv(pd.DataFrame(df), OUT / f, ctx, float_format=None)
     np.savez_compressed(OUT / 'angles.npz', **angs); np.savez_compressed(OUT / 'rdf.npz', r=r, cutoff=cutoff, densities=np.array(list(rdfs)), curves_AB=np.array([np.mean(v, axis=0) for v in rdfs.values()]))
     for f in ('angles.npz', 'rdf.npz', 'example_cell.npz'): write_sidecar(OUT / f, ctx)

@@ -3,6 +3,7 @@ import itertools, sys
 from pathlib import Path
 import numpy as np
 import pytest
+import pandas as pd
 from scipy import stats
 from scipy.special import gammaln
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -142,6 +143,17 @@ def test_learning_curve_shares_sum_to_one_and_sharpen_with_cells():
     rows = learning_curve(X[o[:40]], y[o[:40]], X[o[40:]], ['a', 'b'], (10, 40), n_replicates=30); by = {(r['n_train'], r['kind']): r for r in rows}
     assert len(rows) == 4 and all(abs(by[(n, 'a')]['predicted'] + by[(n, 'b')]['predicted'] - 1) < 1e-9 for n in (10, 40)) and all(r['lower'] <= r['predicted'] <= r['upper'] for r in rows)
     assert by[(40, 'a')]['upper'] - by[(40, 'a')]['lower'] <= by[(10, 'a')]['upper'] - by[(10, 'a')]['lower'] + 1e-12
+
+
+def test_models_take_pandas_inputs_whose_labels_agree():
+    rng = np.random.default_rng(3); X = rng.normal(size=(40, 2)); y = np.where(X[:, 0] > 0, 'a', 'b'); Xt = rng.normal(size=(10, 2)); idx = rng.permutation(40)
+    ref, got = (learning_curve(*args, ['a', 'b'], [40], n_replicates=50) for args in ((X, y, Xt), (pd.DataFrame(X, index=idx), pd.Series(y, index=idx), pd.DataFrame(Xt))))
+    assert [(r['lower'], r['upper']) for r in got] == pytest.approx([(r['lower'], r['upper']) for r in ref])
+    a, b = held_out_shares(X, y, Xt, ['a', 'b'], n_replicates=50), held_out_shares(pd.DataFrame(X, index=idx), pd.Series(y, index=idx), Xt.tolist(), ['a', 'b'], n_replicates=50)
+    assert np.allclose(a['predicted'], b['predicted']) and np.allclose(a['lower'], b['lower']) and np.allclose(a['upper'], b['upper'])
+    with pytest.raises(ValueError, match='different row labels'): held_out_shares(pd.DataFrame(X, index=idx), pd.Series(y, index=idx).sort_values(), Xt, ['a', 'b'])
+    assert np.allclose(held_out_shares(X.tolist(), y.tolist(), Xt.tolist(), ['a', 'b'], n_replicates=50)['predicted'], a['predicted']) and np.allclose(held_out_shares(pd.DataFrame(X), tuple(y), Xt, ['a', 'b'], n_replicates=50)['predicted'], a['predicted'])
+    with pytest.raises(ValueError, match='different columns'): learning_curve(pd.DataFrame(X, columns=['u', 'v']), y, pd.DataFrame(Xt, columns=['v', 'u']), ['a', 'b'], [40])
 
 
 def test_empty_inputs_raise():

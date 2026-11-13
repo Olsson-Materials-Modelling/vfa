@@ -21,8 +21,17 @@ def softmax_predict(W, X):
     Z = np.hstack([np.ones((X.shape[0], 1)), X]) @ W; Z -= Z.max(1, keepdims=True); P = np.exp(Z); return P / P.sum(1, keepdims=True)
 
 
+def _arrays(X_train, y_train, X_test, name):
+    rows, labels, train, test = (getattr(x, key, None) for x, key in ((X_train, 'index'), (y_train, 'index'), (X_train, 'columns'), (X_test, 'columns')))
+    rows, labels = (v if hasattr(v, 'equals') else None for v in (rows, labels))
+    if rows is not None and labels is not None and not rows.equals(labels): raise ValueError(f'{name}: X_train and y_train carry different row labels')
+    if train is not None and test is not None and list(train) != list(test): raise ValueError(f'{name}: X_train and X_test carry different columns')
+    return np.asarray(X_train, float), np.asarray(y_train), np.asarray(X_test, float)
+
+
 def held_out_shares(X_train, y_train, X_test, classes, seed=0, n_replicates=400, alpha=0.05, **fit):
     """Predicted class shares of the test cells from a model fitted on the training cells, with a percentile interval."""
+    X_train, y_train, X_test = _arrays(X_train, y_train, X_test, 'held_out_shares')
     W = softmax_fit(standardise(X_train, X_train), y_train, classes, **fit); Xt = standardise(X_train, X_test); rng = np.random.default_rng(seed); P = softmax_predict(W, Xt)
     reps = np.array([softmax_predict(W, Xt[rng.integers(0, len(Xt), len(Xt))]).mean(0) for _ in range(n_replicates)])
     return dict(classes=list(classes), predicted=P.mean(0), lower=np.array([quantile(reps[:, k], alpha / 2) for k in range(len(classes))]), upper=np.array([quantile(reps[:, k], 1 - alpha / 2) for k in range(len(classes))]), weights=W)
@@ -35,7 +44,7 @@ def log_loss(P, y, classes):
 
 def learning_curve(X_train, y_train, X_test, classes, sizes, seed=0, n_replicates=200, alpha=0.05, **fit):
     """Predicted test shares against the number of training cells, with a percentile interval."""
-    rng = np.random.default_rng(seed); rows = []
+    X_train, y_train, X_test = _arrays(X_train, y_train, X_test, 'learning_curve'); rng = np.random.default_rng(seed); rows = []
     if any(not 1 <= int(n) <= len(y_train) for n in sizes): raise ValueError(f'learning_curve: sizes must lie between 1 and the {len(y_train)} training cells, not {list(sizes)}')
     for n in sizes:
         Xn, yn = X_train[:n], y_train[:n]; pred = softmax_predict(softmax_fit(standardise(Xn, Xn), yn, classes, **fit), standardise(Xn, X_test)).mean(0); reps = []

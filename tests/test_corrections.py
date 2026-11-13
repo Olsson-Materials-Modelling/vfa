@@ -29,8 +29,8 @@ def test_real_corrector_output_is_read_by_its_selected_block():
         s = summarise(*real(leg)); p, d = (json.loads(f.read_text())['selected'] for f in real(leg))
         assert (s['schema_version'], s['code_version']) == ('4.0', '0.8.0') and s['density_selected_eV'] == d['E_corr_eV'] and s['potential_selected_eV'] == p['E_corr_eV'] and s['potential_scheme'] == p['scheme'] and s['density_scheme'] == d['scheme']
         assert (s['density_ionic_geometry'], s['density_screening'], s['potential_ionic_geometry'], s['potential_screening']) == (geometry, screening, geometry, screening) and s['density_carrier'] == d['carrier']
-        sc = json.loads(real(leg)[0].read_text())['schemes']; static = 'concerted_' if leg == 'relaxed' else ''
-        assert s['fnv_eV'] == sc[static + 'FNV_planar_gaussian']['E_corr_eV'] and s['pc_eV'] == sc[static + 'PC_IIC']['E_corr_eV'] and s['lz_eV'] == sc[static + 'LZ_scaled_PC_plus_alignment']['E_corr_eV'] and s['site_eV'] is None
+        sc = json.loads(real(leg)[0].read_text())['schemes']; pre = {'relaxed': 'concerted_', 'vertical': 'clamped_'}.get(geometry, '')
+        assert s['fnv_eV'] == sc[pre + 'FNV_planar_gaussian']['E_corr_eV'] and s['pc_eV'] == sc[pre + 'PC_IIC']['E_corr_eV'] and s['lz_eV'] == sc[pre + 'LZ_scaled_PC_plus_alignment']['E_corr_eV'] and s['site_eV'] == sc.get(pre + 'site_gaussian_median', {}).get('E_corr_eV')
     cr = summarise(*real('relaxed')); assert corrected_formation_energy(-1.0, cr) == -1.0 + cr['density_selected_eV']
 
 
@@ -112,6 +112,15 @@ def test_files_of_different_runs_are_refused_unless_overridden(tmp_path):
     p, other = write(tmp_path, cubes(POT, 'v', 'rho0.060_2'), cubes(DENS, 'rho', 'rho0.060_1'))
     with pytest.raises(ValueError, match='different runs'): summarise(p, other)
     assert summarise(p, other, override=True)['density_selected_eV'] == 0.19
+
+
+def test_each_geometry_reads_the_corrector_names_of_that_geometry(tmp_path):
+    names, prefixes = ('FNV_planar_gaussian', 'LZ_scaled_PC_plus_alignment', 'PC_IIC', 'site_gaussian_median'), ('', 'clamped_', 'concerted_')
+    for geometry, screening, prefix in ((None, 'as_given', ''), ('vertical', 'clamped', 'clamped_'), ('relaxed', 'static', 'concerted_')):
+        pot, dens = copy.deepcopy(POT), copy.deepcopy(DENS); pot['schemes'] = {p + n: {'E_corr_eV': i + j / 10} for i, p in enumerate(prefixes) for j, n in enumerate(names)}
+        for js in (pot, dens): js['selected'].update(ionic_geometry=geometry, screening=screening)
+        s = summarise(*write(tmp_path, pot, dens)); i = prefixes.index(prefix)
+        assert [s[c] for c in ('fnv_eV', 'lz_eV', 'pc_eV', 'site_eV')] == [i + j / 10 for j in range(4)]
 
 
 def test_schemes_not_run_read_none_unless_asked_for(tmp_path):

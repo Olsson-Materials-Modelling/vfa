@@ -1,7 +1,7 @@
 # Tutorial
 
-Steps 1 to 9 run on the example data from the repository root; steps 10 to 12 show the calls for your own files. Defaults
-and options: [conventions.md](conventions.md).
+Steps 1 to 9 run on the example data from the repository root; 10 to 12 take your own files. Defaults and options:
+[conventions.md](conventions.md).
 
 ## 1. Structures and radii
 
@@ -10,11 +10,11 @@ from pathlib import Path
 import numpy as np
 from vfa.io.extxyz import read_structure_files
 from vfa.voids.radii import Radii
-names, cells = read_structure_files(Path('example/data/structures'))      # every .extxyz file, last frame: (symbols, positions, cell)
+names, cells = read_structure_files(Path('example/data/structures'))      # every .extxyz or .xyz file, last frame: (symbols, positions, cell)
 radii = Radii.load('example/data/radii.json')                              # or Radii.covalent(symbols), Radii.ionic(symbols), Radii.centre(symbols)
 ```
 
-Other readers: `vfa.io.cp2k.read_restart`, `vfa.io.lammps.read_lammps_data` (lengths in the file's unit).
+Other readers: `vfa.io.cp2k.read_restart`, `vfa.io.lammps.read_lammps_data` (Å; the file's unit if the title names none or lj).
 [Radii](conventions.md#radii).
 
 ## 2. The bond cutoff, measured
@@ -129,8 +129,8 @@ onset = delocalisation_onset(E, atoms, n, N, fractions=(5, 4, 3)); depth = inter
 ```
 
 `atoms`: the participation number of each state. From CP2K, `vfa.io.cp2k.read_spectrum(folder)` returns the energies, occupations
-and weights per kind (add the kinds of one species); `spin='ALPHA'` by default, `None` for a restricted run. [Electronic
-spectra](conventions.md#electronic-spectra).
+and weights per kind (add the kinds of one species); `spin='ALPHA'` by default, `None` for a restricted run. With OT, use empty
+states only if `read_output(log)['unoccupied_converged']`. [Electronic spectra](conventions.md#electronic-spectra).
 
 ![fig06_spectrum_reading](../demo/figures/fig06_spectrum_reading.png)
 *The example cell before and after the electron is added: participation against energy, marker size the A character. a: the lowest empty state (precursor) and the 1/5 onset; b: the trap by A character. Dotted and dashed: 1/5 and 1/3 of the atoms.*
@@ -173,7 +173,7 @@ contrast = cliff_delta_interval(y[in_a], y[in_b])                               
 [Statistics](conventions.md#statistics).
 
 ![fig07_statistics](../demo/figures/fig07_statistics.png)
-*a: the trap depth of each example cell against its number density, the column that orders the example; the smoothed curve at its held-out window and the change by both straight-line fits. b: the share of three-fold A among A in each set of five cells, its interval from the 5 cell values (grey) or from the 340 sites (black).*
+*a: the trap depth of each example cell against its number density; the smoothed curve at its held-out window and the change by both straight-line fits. b: the share of three-fold A among A in each set of five cells, its interval from the 5 cell values (grey) or from the 340 sites (black).*
 
 ## 12. Provenance
 
@@ -194,8 +194,7 @@ fig00. `bash demo/run.sh remake` first regenerates the example data (about 10 mi
 
 ## 14. Your own material
 
-Point `read_structure_files` at a folder of `.extxyz` files, give `Radii` your species and measure a cutoff for each bonding pair
-with step 2. To run the demo on your cells, set in `demo/analyse.py` and `demo/modes.py` the cells table (`cell`,
-`number_density`), your species in place of `'A'` and `'B'`, the probe radii, grid spacing and ring cap. `demo/electronic.py`
-reads spectra, `events.csv` and corrector JSON laid out as in `example/data`; `demo/statistics.py` takes its columns from
-`ORDER`, `GROUP` and `VALUE`.
+Point `read_structure_files` at your folder, give `Radii` your species and measure each bonding pair's cutoff (step 2). To run
+the demo on your cells, set in `demo/analyse.py` and `demo/modes.py` the cells table (`cell`, `number_density`), your species in
+place of `'A'` and `'B'`, the probe radii, grid spacing and ring cap. `demo/electronic.py` reads spectra, `events.csv` and
+corrector JSON laid out as in `example/data`; `demo/statistics.py` takes its columns from `ORDER`, `GROUP` and `VALUE`.

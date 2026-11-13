@@ -77,3 +77,11 @@ def test_sidecar_extras_must_be_strict_json(tmp_path):
 def test_hash_keys_must_be_strings_and_extra_fields_keep_provenance(tmp_path):
     with pytest.raises(ValueError, match='canonical_hash'): canonical_hash({1: 'a'})
     with pytest.raises(ValueError, match='may not replace provenance fields'): write_csv(pd.DataFrame(dict(x=[1.0])), tmp_path / 't.csv', RunContext(), extra=dict(file_sha256='x'))
+
+
+def test_write_csv_and_parquet_write_named_index_levels_as_columns(tmp_path):
+    df = pd.DataFrame(dict(cell=['c1', 'c1', 'c2'], y=[1.0, 2.0, 5.0])); g = df.groupby('cell').mean()
+    assert write_csv(g, tmp_path / 'g.csv', RunContext()).read_text().splitlines() == ['cell,y', 'c1,1.5', 'c2,5'] and write_csv(df[df.y > 1], tmp_path / 'f.csv', RunContext()).read_text().splitlines()[0] == 'cell,y'
+    for t in (df.set_index('cell', drop=False), df.set_index(['cell', df.index])): assert write_csv(t, tmp_path / 't.csv', RunContext()).read_text().splitlines()[0] == 'cell,y'
+    assert write_csv(df.groupby('cell').cell.count(), tmp_path / 's.csv', RunContext()).read_text().splitlines() == ['cell', '2', '1']
+    pytest.importorskip('pyarrow'); assert pd.read_parquet(write_parquet(g, tmp_path / 'g.parquet', RunContext())).columns.tolist() == ['cell', 'y']

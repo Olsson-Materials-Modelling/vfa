@@ -7,7 +7,7 @@ from ..units import BOHR_A, HARTREE_EV
 _LENGTH = {'angstrom': 1.0, 'bohr': BOHR_A, 'au_l': BOHR_A, 'nm': 10.0, 'pm': 0.01, 'm': 1e10}
 _ANGLE = {'deg': 1.0, 'rad': 180.0 / np.pi}
 _TRUE, _FALSE = {'T', '.T.', 'TRUE', '.TRUE.', 'Y', 'YES', 'ON'}, {'F', '.F.', 'FALSE', '.FALSE.', 'N', 'NO', 'OFF'}
-_CURVE = re.compile(r'_k\d+_curve-'); _KIND = re.compile(r'atomic kind\s+(\S+)'); _STEP = re.compile(r'step i =\s*(\d+)'); _F = r'(-?\d+\.\d+)'
+_CURVE = re.compile(r'[-_]k\d+_curve-'); _KIND = re.compile(r'atomic kind\s+(\S+)'); _STEP = re.compile(r'step i =\s*(\d+)'); _OPTIMISING = re.compile(r'\*\*\*\s+STARTING\s+(?:GEOMETRY|CELL)\s+OPTIMIZATION'); _F = r'(-?\d+\.\d+)'
 _MULLIKEN_UKS = re.compile(rf'^\s*(\d+)\s+(\S+)\s+\d+\s+{_F}\s+{_F}\s+{_F}\s+{_F}\s*$'); _MULLIKEN_RKS = re.compile(rf'^\s*(\d+)\s+(\S+)\s+\d+\s+{_F}\s+{_F}\s*$')
 
 
@@ -17,7 +17,7 @@ def _num(t):
 
 
 def _unit(token, table, path, what):
-    u = table.get(token.strip('[]').lower())
+    u = table.get(token.strip('[]"\'').lower())
     if u is None: raise ValueError(f'read_restart: {path}: unknown unit {token} for {what}')
     return u
 
@@ -36,7 +36,7 @@ def _abc_cell(abc, angles_deg, path):
 
 
 def read_restart(path):
-    """Elements (the ELEMENT of each &KIND, else the kind label), positions (A) and cell (A, rows) of a periodic CP2K restart or input file."""
+    """Elements (&KIND ELEMENT, else label before '_' without trailing digits), positions (A) and cell (A, rows) of a periodic CP2K restart or input file."""
     path = Path(path); stack, kw, symbols, coords, unit_p, scaled, n_cell, n_coord, kind, elements = [], {}, [], [], 1.0, False, 0, 0, None, {}
     for raw in path.read_text(errors='replace').splitlines():
         line = raw.split('#')[0].split('!')[0].strip()
@@ -49,8 +49,8 @@ def read_restart(path):
             if key == '&END': stack = stack[:-1]; continue
             stack.append(key[1:]); n_cell += stack[-2:] == ['SUBSYS', 'CELL']; n_coord += stack[-2:] == ['SUBSYS', 'COORD']
             if n_cell > 1 or n_coord > 1: raise ValueError(f'read_restart: {path}: more than one &SUBSYS &CELL or &COORD section')
-            kind = (t[1].upper() if len(t) > 1 else None) if stack[-2:] == ['SUBSYS', 'KIND'] else kind; continue
-        if stack[-2:] == ['SUBSYS', 'KIND'] and key == 'ELEMENT' and len(t) >= 2 and kind is not None: elements[kind] = t[1].capitalize(); continue
+            kind = (t[1].strip('"\'').upper() if len(t) > 1 else None) if stack[-2:] == ['SUBSYS', 'KIND'] else kind; continue
+        if stack[-2:] == ['SUBSYS', 'KIND'] and key in ('ELEMENT', 'ELEMENT_SYMBOL') and len(t) >= 2 and kind is not None: elements[kind] = t[1].strip('"\'').capitalize(); continue
         if key == 'MULTIPLE_UNIT_CELL' and 'SUBSYS' in stack and [int(x) for x in t[1:4]] != [1, 1, 1]: raise ValueError(f'read_restart: {path}: MULTIPLE_UNIT_CELL {" ".join(t[1:4])} in &{stack[-1]}: replicated cells are not expanded')
         if stack[-2:] == ['SUBSYS', 'CELL']:
             if key == 'CELL_FILE_NAME': raise ValueError(f'read_restart: {path}: the cell is in an external file (CELL_FILE_NAME)')
@@ -72,7 +72,9 @@ def read_restart(path):
     if 'ABC' in kw: cell = _abc_cell(_values(kw['ABC'], _LENGTH, 1.0, path), _values(kw['ALPHA_BETA_GAMMA'], _ANGLE, 1.0, path) if 'ALPHA_BETA_GAMMA' in kw else np.full(3, 90.0), path)
     elif {'A', 'B', 'C'} <= kw.keys(): cell = np.vstack([_values(kw[k], _LENGTH, 1.0, path) for k in 'ABC'])
     else: raise ValueError(f'read_restart: {path}: &SUBSYS &CELL holds neither ABC nor all of A, B, C')
-    xyz = np.array(coords); return np.array([elements.get(s.upper(), s) for s in symbols]), xyz @ cell if scaled else xyz * unit_p, cell
+    names = [elements.get(s.upper(), re.sub(r'\d+$', '', s.split('_')[0]).capitalize()) for s in symbols]
+    if '' in names: raise ValueError(f'read_restart: {path}: kind {symbols[names.index("")]} has no ELEMENT and its label names none')
+    xyz = np.array(coords); return np.array(names), xyz @ cell if scaled else xyz * unit_p, cell
 
 
 def _number(text):
@@ -88,12 +90,12 @@ def _energy(line, path):
 
 
 def read_output(path):
-    """Ended, SCF converged, total energy (Ha) and integrated absolute spin density of the last run."""
-    r = dict(ended=False, converged=None, energy_Ha=None, spin=None); inner = outer = None; free = False; cdft = off = object()
+    """Of the last run: ended, converged (SCF), energy_Ha, spin (integrated absolute spin density), unoccupied_converged, optimised."""
+    fresh = lambda: dict(ended=False, converged=None, energy_Ha=None, spin=None, unoccupied_converged=None, optimised=None); r = fresh(); inner = outer = None; free = False; cdft = off = object()
     for ln in Path(path).read_text(errors='replace').splitlines():
-        if 'PROGRAM STARTED AT' in ln: r = dict(ended=False, converged=None, energy_Ha=None, spin=None); inner = outer = None; free = False; cdft = off
+        if 'PROGRAM STARTED AT' in ln or ('[ABORT]' in ln and r['ended']): r = fresh(); inner = outer = None; free = False; cdft = off
         elif ln.strip() == 'SCF WAVEFUNCTION OPTIMIZATION':
-            inner = outer = r['energy_Ha'] = r['spin'] = None
+            inner = outer = r['energy_Ha'] = r['spin'] = r['unoccupied_converged'] = None
             if cdft is not None: cdft = off
         elif ln.strip() == 'CDFT EXTERNAL SCF WAVEFUNCTION OPTIMIZATION': cdft = r['energy_Ha'] = r['spin'] = None
         elif ln.strip() == 'No variables optimised in outer loop': free = True
@@ -107,6 +109,10 @@ def read_output(path):
         elif 'outer SCF loop converged' in ln: outer = True
         elif 'ENERGY| Total FORCE_EVAL' in ln and ') energy [' in ln: r['energy_Ha'] = _energy(ln, path)
         elif 'Integrated absolute spin density' in ln: r['spin'] = _number(ln)
+        elif 'Using OT eigensolver for additional unoccupied orbitals' in ln: r['unoccupied_converged'] = r['unoccupied_converged'] is not False
+        elif 'did not converge in ot_eigensolver' in ln and r['unoccupied_converged'] is not None: r['unoccupied_converged'] = False
+        elif 'GEOMETRY OPTIMIZATION COMPLETED' in ln and r['optimised'] is not None: r['optimised'] = True
+        elif _OPTIMISING.search(ln) or ('MAXIMUM NUMBER OF OPTIMIZATION STEPS REACHED' in ln and r['optimised'] is not None): r['optimised'] = False
     c = inner if outer is None else (outer if free or not outer else inner is True)
     r['converged'] = c if cdft is off else None if cdft is None else cdft and c; return r
 
@@ -134,8 +140,8 @@ def read_pdos_kind(path):
 
 def read_spectrum(folder, spin='ALPHA', pattern=None):
     """Energies (eV), occupations and per-kind weights of every state of one spin channel, sorted by energy."""
-    folder = Path(folder); pat = (pattern or ('*-{spin}_k*-1.pdos' if spin else '*-k*-1.pdos')).format(spin=spin); got = {}
-    paths = sorted(p for p in folder.glob(pat) if not _CURVE.search(p.name))
+    folder = Path(folder); pat = (pattern or ('*-{spin}_k*-1.pdos' if spin else '*-k*-1.pdos')).format(spin=spin); got = {}; own = re.compile(rf'-{spin}_k\d+-1\.pdos$' if spin else r'-k\d+-1\.pdos$')
+    paths = sorted(p for p in folder.glob(pat) if not _CURVE.search(p.name) and (pattern or own.search(p.name)))
     if not paths: raise FileNotFoundError(f'read_spectrum: no file matches {pat} in {folder}')
     for p in paths:
         kind, step, E, f, w = _pdos_last(p)

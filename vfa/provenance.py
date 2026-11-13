@@ -86,6 +86,12 @@ class RunContext:
         return dict(code_sha256=self.code_sha256, configuration=json.loads(self.config) if self.config else None, configuration_hash=self.config_hash, inputs_hash=self.inputs_hash, created_utc=self.created_utc, python_version=self.python, platform=self.platform, vfa_version=self.vfa_version, **{f"{name.replace('-', '_')}_version": v for name, v in self.libraries})
 
 
+def _index_as_columns(df):
+    cols = getattr(df, 'columns', None); cols = (getattr(df, 'name', None),) if cols is None else cols
+    names = [n for n in getattr(getattr(df, 'index', None), 'names', None) or () if n is not None and n not in cols]
+    return df.reset_index(level=names) if names else df
+
+
 def write_sidecar(target, ctx, extra=None):
     """<target>.meta.json: the context, the file's hash and size, and any extra fields."""
     target = Path(target); meta = dict(ctx.metadata(), file=target.name, file_sha256=sha256_file(target), file_bytes=target.stat().st_size); clash = sorted(set(extra or {}) & set(meta))
@@ -95,13 +101,13 @@ def write_sidecar(target, ctx, extra=None):
 
 
 def write_csv(df, target, ctx, extra=None, float_format='%.17g'):
-    """CSV of a table with a to_csv method and a provenance sidecar."""
-    target = Path(target); target.parent.mkdir(parents=True, exist_ok=True); df.to_csv(target, index=False, float_format=float_format); write_sidecar(target, ctx, extra); return target
+    """CSV of a table, named index levels kept, and a provenance sidecar."""
+    target = Path(target); target.parent.mkdir(parents=True, exist_ok=True); _index_as_columns(df).to_csv(target, index=False, float_format=float_format); write_sidecar(target, ctx, extra); return target
 
 
 def write_parquet(df, target, ctx, extra=None):
-    """Parquet of a pandas DataFrame with the provenance in the schema metadata and a sidecar."""
+    """Parquet of a DataFrame, named index levels kept, provenance in its metadata and a sidecar."""
     try: import pyarrow as pa, pyarrow.parquet as pq
     except ImportError as e: raise ImportError('write_parquet: needs pyarrow, which is not installed (pip install pyarrow)') from e
-    target = Path(target); target.parent.mkdir(parents=True, exist_ok=True); t = pa.Table.from_pandas(df, preserve_index=False); meta = {k: v if isinstance(v, str) else _json(v, 'write_parquet') for k, v in dict(ctx.metadata(), **(extra or {})).items()}
+    target = Path(target); target.parent.mkdir(parents=True, exist_ok=True); t = pa.Table.from_pandas(_index_as_columns(df), preserve_index=False); meta = {k: v if isinstance(v, str) else _json(v, 'write_parquet') for k, v in dict(ctx.metadata(), **(extra or {})).items()}
     t = t.replace_schema_metadata({**(t.schema.metadata or {}), **{k.encode(): v.encode() for k, v in meta.items()}}); pq.write_table(t, target, compression='zstd'); write_sidecar(target, ctx, extra); return target

@@ -97,10 +97,10 @@ Energies must be finite and ascending (all but `align`). Ties go to the first in
 ## Finite-size corrections
 
 `corrections.gates.gate_pair(charged, neutral)` lists the reasons to reject two `read_output` records, empty when they pass: a run
-not ended or not converged, a charged spin outside `unpaired` - 0.5 to `unpaired` + 1.0 (`unpaired=1`, or `spin_window`), a
-neutral spin above 0.5, and, when given, an energy missing or beyond 5e-4 Ha of `energy_reference` (`{'charged': Ha, 'neutral':
-Ha}`), `geometry_identical=False` or `grids_match=False`. A spin not printed is not checked; geometry and grids are yours to
-check.
+not ended or not converged, an unfinished optimisation, a charged spin outside `unpaired` - 0.5 to `unpaired` + 1.0
+(`unpaired=1`, or `spin_window`), a neutral spin above 0.5, and, when given, an energy missing or beyond 5e-4 Ha of
+`energy_reference` (`{'charged': Ha, 'neutral': Ha}`), `geometry_identical=False` or `grids_match=False`. A spin not printed is
+not checked.
 
 `corrections.schemes.summarise(potential_json, density_json)` reads the JSON of
 [cp2k-charge-corrections](https://github.com/Olsson-Materials-Modelling/cp2k-charge-corrections) 0.8.0 (schema 4.0) into one row:

@@ -3,12 +3,13 @@ import math
 
 
 def gate_pair(charged, neutral, spin_window=None, neutral_spin_max=0.5, energy_reference=None, energy_tol_Ha=5e-4, geometry_identical=None, grids_match=None, unpaired=1):
-    """Reasons a pair of read_output records is rejected (run, SCF, spin; the caller's geometry, grid and energy checks); empty when it passes."""
+    """Reasons to reject a pair of read_output records (run, SCF, optimisation, spin; the caller's geometry, grid and energy checks), empty if none."""
     win = tuple(spin_window) if spin_window is not None else (unpaired - 0.5, unpaired + 1.0); bad = []
     if len(win) != 2 or not win[0] <= win[1]: raise ValueError(f'gate_pair: spin window {win} is not (low, high)')
     for tag, r in (('charged', charged), ('neutral', neutral)):
         if not r['ended']: bad.append(f'{tag} run did not end')
         if not r['converged']: bad.append(f"{tag} last SCF {'printed no verdict' if r['converged'] is None else 'not converged'}")
+        if r.get('optimised') is False: bad.append(f'{tag} optimisation did not complete')
     if neutral['spin'] is not None and neutral['spin'] > neutral_spin_max: bad.append(f'neutral spin {neutral["spin"]:.3f} > {neutral_spin_max}')
     if charged['spin'] is not None and not win[0] <= charged['spin'] <= win[1]: bad.append(f'charged spin {charged["spin"]:.3f} outside {win}')
     if geometry_identical is False: bad.append('the two geometries differ')
