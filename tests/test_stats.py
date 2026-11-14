@@ -148,7 +148,7 @@ def test_learning_curve_shares_sum_to_one_and_sharpen_with_cells():
 def test_models_take_pandas_inputs_whose_labels_agree():
     rng = np.random.default_rng(3); X = rng.normal(size=(40, 2)); y = np.where(X[:, 0] > 0, 'a', 'b'); Xt = rng.normal(size=(10, 2)); idx = rng.permutation(40)
     ref, got = (learning_curve(*args, ['a', 'b'], [40], n_replicates=50) for args in ((X, y, Xt), (pd.DataFrame(X, index=idx), pd.Series(y, index=idx), pd.DataFrame(Xt))))
-    assert [(r['lower'], r['upper']) for r in got] == pytest.approx([(r['lower'], r['upper']) for r in ref])
+    assert np.allclose([(r['lower'], r['upper']) for r in got], [(r['lower'], r['upper']) for r in ref])
     a, b = held_out_shares(X, y, Xt, ['a', 'b'], n_replicates=50), held_out_shares(pd.DataFrame(X, index=idx), pd.Series(y, index=idx), Xt.tolist(), ['a', 'b'], n_replicates=50)
     assert np.allclose(a['predicted'], b['predicted']) and np.allclose(a['lower'], b['lower']) and np.allclose(a['upper'], b['upper'])
     with pytest.raises(ValueError, match='different row labels'): held_out_shares(pd.DataFrame(X, index=idx), pd.Series(y, index=idx).sort_values(), Xt, ['a', 'b'])
