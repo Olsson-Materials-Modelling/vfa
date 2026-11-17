@@ -39,9 +39,19 @@ The corrections part reads the output of
 [cp2k-charge-corrections](https://github.com/Olsson-Materials-Modelling/cp2k-charge-corrections) 0.8.0 (schema 4.0). Licence: MIT
 (Olsson Materials Modelling).
 
+## References and citation guidance
+For publications, cite the vfa release/version plus the upstream engines, potentials, datasets, and analysis methods used in the specific workflow. The list below is intended as a practical starting point, not an exhaustive bibliography. 
 
+### Citing VFA
+If you use VFA in your work, please cite: 
 
-#References for the methods named in the code and in the conventions:
+- "The role of density in shaping electron trapping in amorphous silicon nitride" arXiv preprint arXiv:2610.11643, doi: [https://doi.org/10.48550/arXiv.2610.11643]
+
+- "State aligned graph wavelet fingerprints of electron trapping in amorphous Si3N4" arXiv preprint arXiv:2610.06173, doi: [https://doi.org/10.48550/arXiv.2610.06173] 
+
+- "Vitriflow: calibrated amorphous structure ensembles from melt-quench simulations," Computational Materials Science 2026 275 115098, doi: [10.1016/j.commatsci.2026.115098](https://doi.org/10.1016/j.commatsci.2026.115098).
+
+### References for the methods named in the code and in the conventions:
 
 - radii: B. Cordero et al., Dalton Trans. 2832-2838 (2008), <https://doi.org/10.1039/b801115j>; R. D. Shannon, Acta Cryst. A32,
   751-767 (1976), <https://doi.org/10.1107/S0567739476001551>
