@@ -39,7 +39,9 @@ The corrections part reads the output of
 [cp2k-charge-corrections](https://github.com/Olsson-Materials-Modelling/cp2k-charge-corrections) 0.8.0 (schema 4.0). Licence: MIT
 (Olsson Materials Modelling).
 
-References for the methods named in the code and in the conventions:
+
+
+#References for the methods named in the code and in the conventions:
 
 - radii: B. Cordero et al., Dalton Trans. 2832-2838 (2008), <https://doi.org/10.1039/b801115j>; R. D. Shannon, Acta Cryst. A32,
   751-767 (1976), <https://doi.org/10.1107/S0567739476001551>
